@@ -498,10 +498,7 @@
       </div>
 
       <div class="section-header">MX Simulator Terrain File Parameters</div>
-      <div class="code-block" id="terrainOutput">resolution 11
-scale 0.000000
-minaltitude 0.000000
-maxaltitude 0.000000</div>
+      <div class="code-block" id="terrainOutput">11 0.000000 0.000000 0.000000</div>
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyTerrain()">Copy to Clipboard</button>
@@ -677,7 +674,7 @@ maxaltitude 0.000000</div>
       document.getElementById('outBase').textContent   = `${base.toFixed(4)} ft/px`;
 
       document.getElementById('terrainOutput').textContent =
-        `resolution 11\nscale ${(base * hSc).toFixed(6)}\nminaltitude 0.000000\nmaxaltitude ${(eFt * vSc).toFixed(6)}`;
+        `11 ${(base * hSc).toFixed(6)} 0.000000 ${(eFt * vSc).toFixed(6)}`;
     }
 
     function copyTerrain() {
