@@ -308,6 +308,42 @@
     .status.success { background: #d4f5e9; color: #0a6640; display: block; }
     .status.error   { background: #fde8e8; color: #9b1c1c; display: block; }
 
+    /* ── QGIS import ── */
+    .import-box {
+      position: relative;
+      margin-bottom: 4px;
+    }
+
+    .import-box textarea {
+      width: 100%;
+      height: 90px;
+      padding: 10px 12px;
+      border: 1.5px dashed #a0b4d6;
+      border-radius: 8px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #444;
+      background: #f4f7ff;
+      resize: vertical;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .import-box textarea:focus {
+      outline: none;
+      border-color: #4582ec;
+      background: #fff;
+    }
+
+    .import-status {
+      margin-top: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      min-height: 20px;
+    }
+
+    .import-status.ok  { color: #02b875; }
+    .import-status.err { color: #e53e3e; }
+
     /* ── Responsive ── */
     @media (max-width: 580px) {
       .grid-2, .xyz-row { grid-template-columns: 1fr; }
@@ -376,6 +412,14 @@
 
     <!-- ══════════════ TERRAIN CALCULATOR ══════════════ -->
     <div id="tab-tc" class="tab-panel">
+
+      <div class="section-header">Import from QGIS</div>
+      <div class="import-box">
+        <textarea id="qgisImport"
+          placeholder="Paste your QGIS layer info here and all fields will fill automatically..."
+          oninput="parseQGIS(this.value)"></textarea>
+        <div class="import-status" id="importStatus"></div>
+      </div>
 
       <div class="section-header">QGIS Extent Coordinates</div>
       <div class="grid-2">
@@ -556,6 +600,49 @@ maxaltitude 0.000000</div>
     }
 
     // ══════════════ TERRAIN CALCULATOR ═════════════════════════════════════
+
+    function parseQGIS(text) {
+      const status = document.getElementById('importStatus');
+      if (!text.trim()) { status.textContent = ''; return; }
+
+      // Extent line: "Extent    xmin,ymin : xmax,ymax"
+      const extentMatch = text.match(
+        /Extent\s+([\d.]+)\s*,\s*([\d.]+)\s*:\s*([\d.]+)\s*,\s*([\d.]+)/i
+      );
+
+      // Elevation stats
+      const minMatch = text.match(/STATISTICS_MINIMUM\s*=\s*([\d.]+)/i);
+      const maxMatch = text.match(/STATISTICS_MAXIMUM\s*=\s*([\d.]+)/i);
+
+      const found = [];
+
+      if (extentMatch) {
+        document.getElementById('xmin').value = parseFloat(extentMatch[1]);
+        document.getElementById('ymin').value = parseFloat(extentMatch[2]);
+        document.getElementById('xmax').value = parseFloat(extentMatch[3]);
+        document.getElementById('ymax').value = parseFloat(extentMatch[4]);
+        found.push('extent');
+      }
+
+      if (minMatch) {
+        document.getElementById('minElev').value = parseFloat(minMatch[1]);
+        found.push('min elevation');
+      }
+
+      if (maxMatch) {
+        document.getElementById('maxElev').value = parseFloat(maxMatch[1]);
+        found.push('max elevation');
+      }
+
+      if (found.length === 0) {
+        status.textContent = 'Could not find any recognisable QGIS data.';
+        status.className = 'import-status err';
+      } else {
+        status.textContent = '✔ Imported: ' + found.join(', ');
+        status.className = 'import-status ok';
+        calculate();
+      }
+    }
 
     function onSlider() {
       document.getElementById('hScaleLabel').textContent =
