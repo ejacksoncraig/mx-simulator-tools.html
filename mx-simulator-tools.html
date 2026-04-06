@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MX Simulator Tools</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f0f2f5;
+      min-height: 100vh;
+      padding: 24px 16px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #1a1a2e;
+      font-size: 26px;
+      margin-bottom: 6px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    /* ── Tabs ── */
+    .tabs {
+      display: flex;
+      max-width: 820px;
+      margin: 0 auto 0;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 10px 10px 0 0;
+      background: #dde1e7;
+      color: #555;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #ffffff;
+      color: #4582ec;
+    }
+
+    /* ── Card container ── */
+    .container {
+      background: #ffffff;
+      border-radius: 0 0 16px 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      padding: 32px;
+      max-width: 820px;
+      margin: 0 auto;
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Section headers ── */
+    .section-header {
+      background: #4582ec;
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 7px 14px;
+      border-radius: 6px;
+      margin: 22px 0 12px;
+    }
+
+    .section-header:first-child { margin-top: 0; }
+
+    /* ── Form elements ── */
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 5px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1.5px solid #d0d5dd;
+      border-radius: 7px;
+      font-size: 14px;
+      color: #222;
+      background: #fafafa;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      outline: none;
+      border-color: #4582ec;
+      box-shadow: 0 0 0 3px rgba(69,130,236,0.15);
+      background: #fff;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .input-group { margin-bottom: 4px; }
+
+    /* ── File upload ── */
+    .file-upload-area {
+      border: 2px dashed #c0cadd;
+      border-radius: 10px;
+      padding: 28px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      background: #f8faff;
+      position: relative;
+    }
+
+    .file-upload-area:hover,
+    .file-upload-area.dragover {
+      border-color: #4582ec;
+      background: #eef3fd;
+    }
+
+    .file-upload-area input[type="file"] {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .upload-icon { font-size: 36px; margin-bottom: 8px; }
+
+    .upload-text {
+      font-size: 15px;
+      font-weight: 600;
+      color: #4582ec;
+      margin-bottom: 4px;
+    }
+
+    .upload-hint { font-size: 12px; color: #888; }
+
+    .file-name {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #333;
+      font-weight: 600;
+      display: none;
+    }
+
+    /* ── Toggle / checkbox ── */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 14px 0 10px;
+    }
+
+    .toggle-row input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: #4582ec;
+      cursor: pointer;
+    }
+
+    .toggle-row label {
+      margin: 0;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    /* ── Scale inputs row ── */
+    .scale-inputs { margin-top: 10px; }
+    .xyz-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+    }
+
+    /* ── Slider ── */
+    .slider-group { margin-bottom: 16px; }
+
+    .slider-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .slider-label-row label { margin: 0; }
+
+    .badge {
+      background: #4582ec;
+      color: white;
+      padding: 3px 12px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: #dde1e7;
+      outline: none;
+      -webkit-appearance: none;
+      cursor: pointer;
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #4582ec;
+      cursor: pointer;
+      transition: transform 0.15s;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: #4582ec; cursor: pointer; border: none;
+    }
+
+    /* ── Output box ── */
+    .output-box {
+      background: #f5f7fa;
+      border-radius: 8px;
+      border: 1px solid #e4e7ec;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .output-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 16px;
+      border-bottom: 1px solid #e4e7ec;
+      font-size: 14px;
+    }
+
+    .output-row:last-child { border-bottom: none; }
+    .output-label { color: #555; font-weight: 500; }
+    .output-value { font-family: 'Courier New', monospace; font-weight: 700; color: #222; }
+
+    /* ── Code block ── */
+    .code-block {
+      background: #1e2330;
+      color: #e2e8f0;
+      border-radius: 8px;
+      padding: 18px 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      line-height: 2;
+      margin-top: 8px;
+      white-space: pre;
+    }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-block;
+      padding: 11px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn:hover { opacity: 0.88; }
+    .btn:active { transform: scale(0.97); }
+
+    .btn-primary { background: #4582ec; color: white; }
+    .btn-success { background: #02b875; color: white; }
+    .btn-row { display: flex; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+
+    /* ── Status message ── */
+    .status {
+      margin-top: 12px;
+      padding: 10px 14px;
+      border-radius: 7px;
+      font-size: 14px;
+      font-weight: 600;
+      display: none;
+    }
+
+    .status.success { background: #d4f5e9; color: #0a6640; display: block; }
+    .status.error   { background: #fde8e8; color: #9b1c1c; display: block; }
+
+    /* ── Responsive ── */
+    @media (max-width: 580px) {
+      .grid-2, .xyz-row { grid-template-columns: 1fr; }
+      .container { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>MX Simulator Tools</h1>
+  <p class="subtitle">JM Scaler &amp; Terrain Calculator</p>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('jm')">JM Scaler</button>
+    <button class="tab-btn"        onclick="switchTab('tc')">Terrain Calculator</button>
+  </div>
+
+  <div class="container">
+
+    <!-- ══════════════ JM SCALER ══════════════ -->
+    <div id="tab-jm" class="tab-panel active">
+
+      <div class="section-header">Select .jm File</div>
+      <div class="file-upload-area" id="dropZone">
+        <input type="file" id="jmFile" accept=".jm" onchange="onFileSelected(this)">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Click to choose a .jm file</div>
+        <div class="upload-hint">or drag and drop it here</div>
+        <div class="file-name" id="fileName"></div>
+      </div>
+
+      <div class="section-header">Scale Settings</div>
+
+      <div class="toggle-row">
+        <input type="checkbox" id="uniformCheck" checked onchange="toggleUniform()">
+        <label for="uniformCheck">Uniform scaling (same value for X, Y, Z)</label>
+      </div>
+
+      <div class="scale-inputs">
+        <div id="uniformRow" class="input-group">
+          <label for="uniformVal">Scale</label>
+          <input type="number" id="uniformVal" value="1.0" step="0.01" style="max-width:160px">
+        </div>
+        <div id="xyzRow" class="xyz-row" style="display:none">
+          <div class="input-group">
+            <label for="scaleX">Scale X</label>
+            <input type="number" id="scaleX" value="1.0" step="0.01">
+          </div>
+          <div class="input-group">
+            <label for="scaleY">Scale Y</label>
+            <input type="number" id="scaleY" value="1.0" step="0.01">
+          </div>
+          <div class="input-group">
+            <label for="scaleZ">Scale Z</label>
+            <input type="number" id="scaleZ" value="1.0" step="0.01">
+          </div>
+        </div>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-success" onclick="scaleFile()">⬇ Scale &amp; Download</button>
+      </div>
+
+      <div class="status" id="jmStatus"></div>
+    </div>
+
+    <!-- ══════════════ TERRAIN CALCULATOR ══════════════ -->
+    <div id="tab-tc" class="tab-panel">
+
+      <div class="section-header">QGIS Extent Coordinates</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>X Min (left)</label>
+          <input type="number" id="xmin" step="any" placeholder="455884.99" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>X Max (right)</label>
+          <input type="number" id="xmax" step="any" placeholder="456764.99" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>Y Min (bottom)</label>
+          <input type="number" id="ymin" step="any" placeholder="3737847.00" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>Y Max (top)</label>
+          <input type="number" id="ymax" step="any" placeholder="3738636.00" oninput="calculate()">
+        </div>
+      </div>
+
+      <div class="section-header">Elevation Data (meters)</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>Minimum Elevation</label>
+          <input type="number" id="minElev" step="any" placeholder="288.05" oninput="calculate()">
+        </div>
+        <div class="input-group">
+          <label>Maximum Elevation</label>
+          <input type="number" id="maxElev" step="any" placeholder="367.45" oninput="calculate()">
+        </div>
+      </div>
+
+      <div class="section-header">Output Resolution</div>
+      <div class="input-group" style="max-width:260px">
+        <label>Image Width (pixels)</label>
+        <input type="number" id="imageWidth" value="4097" step="1" oninput="calculate()">
+      </div>
+
+      <div class="section-header">Scale Adjustments</div>
+
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <label>Horizontal Scale (X/Y)</label>
+          <span class="badge" id="hScaleLabel">1.20x</span>
+        </div>
+        <input type="range" id="hScale" min="0.5" max="3.0" step="0.05" value="1.2" oninput="onSlider()">
+      </div>
+
+      <div class="slider-group">
+        <div class="slider-label-row">
+          <label>Vertical Scale (Z)</label>
+          <span class="badge" id="vScaleLabel">1.40x</span>
+        </div>
+        <input type="range" id="vScale" min="0.5" max="3.0" step="0.05" value="1.4" oninput="onSlider()">
+      </div>
+
+      <div class="section-header">Calculated Values</div>
+      <div class="output-box">
+        <div class="output-row">
+          <span class="output-label">Real-world Width:</span>
+          <span class="output-value" id="outWidth">—</span>
+        </div>
+        <div class="output-row">
+          <span class="output-label">Real-world Height:</span>
+          <span class="output-value" id="outHeight">—</span>
+        </div>
+        <div class="output-row">
+          <span class="output-label">Elevation Range:</span>
+          <span class="output-value" id="outElev">—</span>
+        </div>
+        <div class="output-row">
+          <span class="output-label">Base Scale (1:1):</span>
+          <span class="output-value" id="outBase">—</span>
+        </div>
+      </div>
+
+      <div class="section-header">MX Simulator Terrain File Parameters</div>
+      <div class="code-block" id="terrainOutput">resolution 11
+scale 0.000000
+minaltitude 0.000000
+maxaltitude 0.000000</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyTerrain()">Copy to Clipboard</button>
+      </div>
+    </div>
+
+  </div><!-- /container -->
+
+  <script>
+    // ── Tab switching ────────────────────────────────────────────────────────
+    function switchTab(id) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + id).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // ══════════════ JM SCALER ══════════════════════════════════════════════
+
+    let jmFileContent = null;
+    let jmFileName    = '';
+
+    function onFileSelected(input) {
+      const file = input.files[0];
+      if (!file) return;
+      jmFileName = file.name;
+      document.getElementById('fileName').textContent = '✔ ' + file.name;
+      document.getElementById('fileName').style.display = 'block';
+
+      const reader = new FileReader();
+      reader.onload = e => { jmFileContent = e.target.result; };
+      reader.readAsText(file);
+    }
+
+    // Drag-and-drop highlighting
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+    dropZone.addEventListener('dragleave', ()  => dropZone.classList.remove('dragover'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (!file) return;
+      document.getElementById('jmFile').files = e.dataTransfer.files;
+      onFileSelected({ files: e.dataTransfer.files });
+    });
+
+    function toggleUniform() {
+      const on = document.getElementById('uniformCheck').checked;
+      document.getElementById('uniformRow').style.display = on ? '' : 'none';
+      document.getElementById('xyzRow').style.display     = on ? 'none' : 'grid';
+    }
+
+    function showStatus(msg, type) {
+      const el = document.getElementById('jmStatus');
+      el.textContent = msg;
+      el.className = 'status ' + type;
+    }
+
+    function scaleFile() {
+      if (!jmFileContent) { showStatus('Please select a .jm file first.', 'error'); return; }
+
+      const lines = jmFileContent.split('\n');
+      if (lines[0].trim() !== 'JM1') { showStatus('Not a valid JM1 file.', 'error'); return; }
+
+      let sx, sy, sz;
+      if (document.getElementById('uniformCheck').checked) {
+        sx = sy = sz = parseFloat(document.getElementById('uniformVal').value);
+      } else {
+        sx = parseFloat(document.getElementById('scaleX').value);
+        sy = parseFloat(document.getElementById('scaleY').value);
+        sz = parseFloat(document.getElementById('scaleZ').value);
+      }
+
+      if ([sx, sy, sz].some(isNaN)) { showStatus('Scale values must be numbers.', 'error'); return; }
+
+      const out = lines.map(line => {
+        const parts = line.split(' ');
+        if (parts.length === 8) {
+          parts[0] = (parseFloat(parts[0]) * sx).toString();
+          parts[1] = (parseFloat(parts[1]) * sy).toString();
+          parts[2] = (parseFloat(parts[2]) * sz).toString();
+          return parts.join(' ');
+        }
+        return line;
+      });
+
+      const blob = new Blob([out.join('\n')], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = jmFileName.replace(/\.jm$/i, '_scaled.jm');
+      a.click();
+      URL.revokeObjectURL(a.href);
+
+      showStatus('File scaled and downloaded successfully!', 'success');
+    }
+
+    // ══════════════ TERRAIN CALCULATOR ═════════════════════════════════════
+
+    function onSlider() {
+      document.getElementById('hScaleLabel').textContent =
+        parseFloat(document.getElementById('hScale').value).toFixed(2) + 'x';
+      document.getElementById('vScaleLabel').textContent =
+        parseFloat(document.getElementById('vScale').value).toFixed(2) + 'x';
+      calculate();
+    }
+
+    function mToFt(m) { return m * 3.28084; }
+
+    function calculate() {
+      const xmin  = parseFloat(document.getElementById('xmin').value);
+      const xmax  = parseFloat(document.getElementById('xmax').value);
+      const ymin  = parseFloat(document.getElementById('ymin').value);
+      const ymax  = parseFloat(document.getElementById('ymax').value);
+      const minE  = parseFloat(document.getElementById('minElev').value);
+      const maxE  = parseFloat(document.getElementById('maxElev').value);
+      const imgW  = parseFloat(document.getElementById('imageWidth').value);
+      const hSc   = parseFloat(document.getElementById('hScale').value);
+      const vSc   = parseFloat(document.getElementById('vScale').value);
+
+      if ([xmin,xmax,ymin,ymax,minE,maxE,imgW].some(isNaN) || imgW === 0) return;
+
+      const wM = xmax - xmin, hM = ymax - ymin, eM = maxE - minE;
+      const wFt = mToFt(wM), hFt = mToFt(hM), eFt = mToFt(eM);
+      const base = wFt / imgW;
+
+      document.getElementById('outWidth').textContent  = `${wM.toFixed(1)} m  (${wFt.toFixed(1)} ft)`;
+      document.getElementById('outHeight').textContent = `${hM.toFixed(1)} m  (${hFt.toFixed(1)} ft)`;
+      document.getElementById('outElev').textContent   = `${eM.toFixed(1)} m  (${eFt.toFixed(1)} ft)`;
+      document.getElementById('outBase').textContent   = `${base.toFixed(4)} ft/px`;
+
+      document.getElementById('terrainOutput').textContent =
+        `resolution 11\nscale ${(base * hSc).toFixed(6)}\nminaltitude 0.000000\nmaxaltitude ${(eFt * vSc).toFixed(6)}`;
+    }
+
+    function copyTerrain() {
+      const text = document.getElementById('terrainOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>
