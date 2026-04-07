@@ -479,7 +479,17 @@
     <!-- ══════════════ TERRAIN CALCULATOR ══════════════ -->
     <div id="tab-tc" class="tab-panel">
 
-      <div class="section-header">Import from QGIS</div>
+      <div class="section-header">Simple Map Size</div>
+      <div class="input-group" style="max-width:260px">
+        <label for="simpleMapFt">Map Size (feet) — square 4097px map</label>
+        <input type="number" id="simpleMapFt" placeholder="2000" step="1" min="1" oninput="calcSimple()">
+      </div>
+      <div class="code-block" id="simpleOutput" style="margin-top:8px">Enter a size above…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copySimple()">Copy to Clipboard</button>
+      </div>
+
+      <div class="section-header" style="margin-top:28px">Import from QGIS</div>
       <div class="import-box">
         <textarea id="qgisImport"
           placeholder="Paste your QGIS layer info here and all fields will fill automatically..."
@@ -706,6 +716,29 @@
       URL.revokeObjectURL(a.href);
 
       showStatus('File scaled and downloaded successfully!', 'success');
+    }
+
+    // ══════════════ SIMPLE MAP SIZE ════════════════════════════════════════
+
+    function calcSimple() {
+      const ft = parseFloat(document.getElementById('simpleMapFt').value);
+      if (isNaN(ft) || ft <= 0) {
+        document.getElementById('simpleOutput').textContent = 'Enter a size above…';
+        return;
+      }
+      const scale = (ft / 4097).toFixed(6);
+      document.getElementById('simpleOutput').textContent = `11 ${scale} 0.000000 0.000000`;
+    }
+
+    function copySimple() {
+      const text = document.getElementById('simpleOutput').textContent;
+      if (text === 'Enter a size above…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
     }
 
     // ══════════════ TERRAIN CALCULATOR ═════════════════════════════════════
