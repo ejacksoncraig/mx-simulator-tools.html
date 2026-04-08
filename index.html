@@ -680,6 +680,13 @@
             <span><span class="sun-legend-dot" style="background:#ffdc50"></span>Sun position</span>
             <span><span class="sun-legend-dot" style="background:#6aa0ff"></span>Shadow direction</span>
           </div>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <label class="btn btn-secondary" style="font-size:12px;padding:6px 12px;cursor:pointer;margin:0">
+              Upload Map Image
+              <input type="file" id="sunMapUpload" accept="image/*" style="display:none" onchange="onSunMapUpload(this)">
+            </label>
+            <button class="btn btn-secondary" id="sunMapClear" style="font-size:12px;padding:6px 12px;display:none" onclick="clearSunMap()">Clear Image</button>
+          </div>
         </div>
 
         <div>
@@ -1077,6 +1084,7 @@
     // ══════════════ SUN VECTOR ══════════════════════════════════════════════
 
     let sunX = 0.75, sunY = 0.75, sunZ = -1.0;
+    let sunMapImg = null;
     let isDraggingSun = false;
     const SUN_MAX = 2;
     const SUN_SIZE = 260;
@@ -1107,13 +1115,24 @@
       sc.clearRect(0, 0, W, H);
 
       // Background
-      const bg = sc.createLinearGradient(0, 0, W, H);
-      bg.addColorStop(0, '#1a2540');
-      bg.addColorStop(1, '#0c1220');
-      sc.fillStyle = bg;
       sc.beginPath();
       sc.roundRect(0, 0, W, H, 12);
-      sc.fill();
+      sc.closePath();
+      sc.save();
+      sc.clip();
+      if (sunMapImg) {
+        sc.drawImage(sunMapImg, 0, 0, W, H);
+        // Dark overlay so grid/labels stay readable
+        sc.fillStyle = 'rgba(10,18,40,0.45)';
+        sc.fillRect(0, 0, W, H);
+      } else {
+        const bg = sc.createLinearGradient(0, 0, W, H);
+        bg.addColorStop(0, '#1a2540');
+        bg.addColorStop(1, '#0c1220');
+        sc.fillStyle = bg;
+        sc.fillRect(0, 0, W, H);
+      }
+      sc.restore();
 
       // Reference circles
       sc.lineWidth = 1;
@@ -1258,6 +1277,29 @@
         btn.style.background = '#02b875';
         setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
       });
+    }
+
+    function onSunMapUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          sunMapImg = img;
+          document.getElementById('sunMapClear').style.display = '';
+          drawSun();
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function clearSunMap() {
+      sunMapImg = null;
+      document.getElementById('sunMapUpload').value = '';
+      document.getElementById('sunMapClear').style.display = 'none';
+      drawSun();
     }
 
     // Initial render
