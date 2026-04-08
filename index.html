@@ -621,6 +621,28 @@
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyTerrain()">Copy to Clipboard</button>
       </div>
+
+      <!-- ── Decal Overlay ── -->
+      <div class="section-header" style="margin-top:28px">Decal Overlay Lines</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="decalFolder">Folder path (after @)</label>
+          <input type="text" id="decalFolder" placeholder="my_track/Textures" oninput="buildDecalLines()">
+        </div>
+        <div class="input-group">
+          <label for="decalGrid">Grid size</label>
+          <select id="decalGrid" onchange="buildDecalLines()" style="width:100%;padding:9px 12px;border:1.5px solid #d0d5dd;border-radius:7px;font-size:14px;color:#222;background:#fafafa">
+            <option value="1">1×1 (1 tile)</option>
+            <option value="2">2×2 (4 tiles)</option>
+            <option value="4" selected>4×4 (16 tiles)</option>
+          </select>
+        </div>
+      </div>
+      <div class="code-block" id="decalOutput" style="white-space:pre-wrap;word-break:break-all;margin-top:8px">Calculate terrain values above first…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyDecal()">Copy to Clipboard</button>
+      </div>
+
     </div>
 
     <!-- ══════════════ STATUE BUILDER ══════════════ -->
@@ -917,14 +939,20 @@
 
     // ══════════════ SIMPLE MAP SIZE ════════════════════════════════════════
 
+    let currentMapWidthFeet = 0;
+
     function calcSimple() {
       const ft = parseFloat(document.getElementById('simpleMapFt').value);
       if (isNaN(ft) || ft <= 0) {
         document.getElementById('simpleOutput').textContent = 'Enter a size above…';
+        currentMapWidthFeet = 0;
+        buildDecalLines();
         return;
       }
       const scale = (ft / 4097).toFixed(6);
       document.getElementById('simpleOutput').textContent = `11 ${scale} 0.000000 0.000000`;
+      currentMapWidthFeet = ft;
+      buildDecalLines();
     }
 
     function copySimple() {
@@ -1017,10 +1045,51 @@
 
       document.getElementById('terrainOutput').textContent =
         `11 ${(base * hSc).toFixed(6)} 0.000000 ${(eFt * vSc).toFixed(6)}`;
+
+      currentMapWidthFeet = wFt * hSc;
+      buildDecalLines();
     }
 
     function copyTerrain() {
       const text = document.getElementById('terrainOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    // ══════════════ DECAL OVERLAY ══════════════════════════════════════════
+
+    function buildDecalLines() {
+      const out = document.getElementById('decalOutput');
+      if (!out) return;
+      if (!currentMapWidthFeet) {
+        out.textContent = 'Calculate terrain values above first…';
+        return;
+      }
+      const grid   = parseInt(document.getElementById('decalGrid').value);
+      const folder = document.getElementById('decalFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+      const tileSize = currentMapWidthFeet / grid;
+      const lines = [];
+      let idx = 1;
+      for (let row = 0; row < grid; row++) {
+        for (let col = 0; col < grid; col++) {
+          const x = tileSize * col + tileSize / 2;
+          const z = tileSize * row + tileSize / 2;
+          lines.push(`[${x.toFixed(6)} ${z.toFixed(6)}] 0.000000 ${tileSize.toFixed(6)} 1.000000 ${prefix}${idx}.png`);
+          idx++;
+        }
+      }
+      out.textContent = lines.join('\n');
+    }
+
+    function copyDecal() {
+      const text = document.getElementById('decalOutput').textContent;
+      const skip = ['Calculate terrain values above first…'];
+      if (skip.includes(text)) return;
       navigator.clipboard.writeText(text).then(() => {
         const btn = event.target;
         btn.textContent = 'Copied!';
