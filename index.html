@@ -409,6 +409,46 @@
 
     .btn-secondary { background: #718096; color: white; }
 
+    /* ── Sun Vector tool ── */
+    .sun-layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      gap: 24px;
+      align-items: start;
+    }
+
+    #sunCanvas {
+      cursor: crosshair;
+      border-radius: 12px;
+      display: block;
+      width: 260px;
+      height: 260px;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .sun-legend {
+      display: flex;
+      gap: 16px;
+      margin-top: 8px;
+      font-size: 12px;
+      color: #888;
+    }
+
+    .sun-legend span { display: flex; align-items: center; gap: 5px; }
+
+    .sun-legend-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 620px) {
+      .sun-layout { grid-template-columns: 1fr; }
+      #sunCanvas   { width: 100%; height: auto; aspect-ratio: 1; }
+    }
+
     /* ── Responsive ── */
     @media (max-width: 580px) {
       .grid-2, .xyz-row { grid-template-columns: 1fr; }
@@ -425,6 +465,7 @@
     <button class="tab-btn active" onclick="switchTab('jm')">JM Scaler</button>
     <button class="tab-btn"        onclick="switchTab('tc')">Terrain Calculator</button>
     <button class="tab-btn"        onclick="switchTab('sb')">Statue Builder</button>
+    <button class="tab-btn"        onclick="switchTab('sv')">Sun Vector</button>
   </div>
 
   <div class="container">
@@ -623,6 +664,56 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyStatues()">Copy to Clipboard</button>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ SUN VECTOR ══════════════ -->
+    <div id="tab-sv" class="tab-panel">
+
+      <div class="section-header">Sun Position — click or drag the map</div>
+      <div class="sun-layout">
+
+        <div>
+          <canvas id="sunCanvas"></canvas>
+          <div class="sun-legend">
+            <span><span class="sun-legend-dot" style="background:#ffdc50"></span>Sun position</span>
+            <span><span class="sun-legend-dot" style="background:#6aa0ff"></span>Shadow direction</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="section-header" style="margin-top:0">Sun Height (Y)</div>
+          <div class="slider-group">
+            <div class="slider-label-row">
+              <label>Height (0 = horizon, 2 = high)</label>
+              <span class="badge" id="sunYLabel">0.75</span>
+            </div>
+            <input type="range" id="sunYSlider" min="0" max="2" step="0.05" value="0.75" oninput="onSunYSlider()">
+          </div>
+
+          <div class="section-header">Fine Tune Values</div>
+          <div class="grid-2">
+            <div class="input-group">
+              <label>X — East (+) / West (−)</label>
+              <input type="number" id="sunXInput" step="0.05" value="0.75" oninput="onSunInput()">
+            </div>
+            <div class="input-group">
+              <label>Y — Height</label>
+              <input type="number" id="sunYInput" step="0.05" value="0.75" min="0" oninput="onSunInput()">
+            </div>
+            <div class="input-group">
+              <label>Z — South (+) / North (−)</label>
+              <input type="number" id="sunZInput" step="0.05" value="-1.00" oninput="onSunInput()">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header" style="margin-top:24px">sun_vector Output</div>
+      <div class="code-block" id="sunOutput">sun_vector 0.750000 0.750000 -1.000000</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copySunVector()">Copy to Clipboard</button>
       </div>
 
     </div>
@@ -983,6 +1074,194 @@
         setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
       });
     }
+    // ══════════════ SUN VECTOR ══════════════════════════════════════════════
+
+    let sunX = 0.75, sunY = 0.75, sunZ = -1.0;
+    let isDraggingSun = false;
+    const SUN_MAX = 2;
+    const SUN_SIZE = 260;
+
+    const sunCanvas = document.getElementById('sunCanvas');
+    sunCanvas.width  = SUN_SIZE;
+    sunCanvas.height = SUN_SIZE;
+    const sc = sunCanvas.getContext('2d');
+
+    function sunToCanvas(x, z) {
+      return {
+        px: (x / SUN_MAX) * (SUN_SIZE / 2) + SUN_SIZE / 2,
+        py: (z / SUN_MAX) * (SUN_SIZE / 2) + SUN_SIZE / 2
+      };
+    }
+
+    function canvasToSun(px, py) {
+      return {
+        x: ((px - SUN_SIZE / 2) / (SUN_SIZE / 2)) * SUN_MAX,
+        z: ((py - SUN_SIZE / 2) / (SUN_SIZE / 2)) * SUN_MAX
+      };
+    }
+
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    function drawSun() {
+      const W = SUN_SIZE, H = SUN_SIZE, cx = W / 2, cy = H / 2;
+      sc.clearRect(0, 0, W, H);
+
+      // Background
+      const bg = sc.createLinearGradient(0, 0, W, H);
+      bg.addColorStop(0, '#1a2540');
+      bg.addColorStop(1, '#0c1220');
+      sc.fillStyle = bg;
+      sc.beginPath();
+      sc.roundRect(0, 0, W, H, 12);
+      sc.fill();
+
+      // Reference circles
+      sc.lineWidth = 1;
+      for (let r = 0.5; r <= SUN_MAX; r += 0.5) {
+        const pr = (r / SUN_MAX) * (W / 2);
+        sc.strokeStyle = r % 1 === 0 ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)';
+        sc.beginPath();
+        sc.arc(cx, cy, pr, 0, Math.PI * 2);
+        sc.stroke();
+      }
+
+      // Axes
+      sc.strokeStyle = 'rgba(255,255,255,0.15)';
+      sc.lineWidth = 1;
+      sc.beginPath(); sc.moveTo(cx, 16); sc.lineTo(cx, H - 16); sc.stroke();
+      sc.beginPath(); sc.moveTo(16, cy); sc.lineTo(W - 16, cy); sc.stroke();
+
+      // Diagonal guides
+      sc.strokeStyle = 'rgba(255,255,255,0.05)';
+      sc.setLineDash([3, 6]);
+      sc.beginPath(); sc.moveTo(16, 16); sc.lineTo(W - 16, H - 16); sc.stroke();
+      sc.beginPath(); sc.moveTo(W - 16, 16); sc.lineTo(16, H - 16); sc.stroke();
+      sc.setLineDash([]);
+
+      // Compass labels
+      sc.fillStyle = 'rgba(255,255,255,0.45)';
+      sc.font = 'bold 11px -apple-system, BlinkMacSystemFont, sans-serif';
+      sc.textAlign = 'center';
+      sc.textBaseline = 'middle';
+      sc.fillText('N', cx, 10);
+      sc.fillText('S', cx, H - 10);
+      sc.fillText('E', W - 10, cy);
+      sc.fillText('W', 10, cy);
+
+      // Sun canvas coords
+      const { px: sx, py: sz } = sunToCanvas(sunX, sunZ);
+
+      // Dashed line: sun → center
+      sc.strokeStyle = 'rgba(255,210,60,0.3)';
+      sc.lineWidth = 1.5;
+      sc.setLineDash([5, 4]);
+      sc.beginPath(); sc.moveTo(sx, sz); sc.lineTo(cx, cy); sc.stroke();
+      sc.setLineDash([]);
+
+      // Shadow arrow: center → opposite of sun (clamped to edge)
+      const dx = cx - sx, dz = cy - sz;
+      const len = Math.sqrt(dx * dx + dz * dz);
+      if (len > 4) {
+        const nx = dx / len, nz = dz / len;
+        const arrowLen = Math.min(len * 0.55, 50);
+        const ax = cx + nx * arrowLen, ay = cy + nz * arrowLen;
+        const angle = Math.atan2(nz, nx);
+
+        sc.strokeStyle = 'rgba(100,160,255,0.7)';
+        sc.lineWidth = 2;
+        sc.beginPath(); sc.moveTo(cx, cy); sc.lineTo(ax, ay); sc.stroke();
+
+        // Arrowhead
+        const aS = 7;
+        sc.fillStyle = 'rgba(100,160,255,0.8)';
+        sc.beginPath();
+        sc.moveTo(ax + Math.cos(angle) * aS, ay + Math.sin(angle) * aS);
+        sc.lineTo(ax + Math.cos(angle + 2.4) * aS, ay + Math.sin(angle + 2.4) * aS);
+        sc.lineTo(ax + Math.cos(angle - 2.4) * aS, ay + Math.sin(angle - 2.4) * aS);
+        sc.closePath();
+        sc.fill();
+      }
+
+      // Sun glow
+      const glow = sc.createRadialGradient(sx, sz, 0, sx, sz, 22);
+      glow.addColorStop(0,   'rgba(255,220,80,0.55)');
+      glow.addColorStop(0.5, 'rgba(255,140,20,0.2)');
+      glow.addColorStop(1,   'rgba(255,80,0,0)');
+      sc.fillStyle = glow;
+      sc.beginPath(); sc.arc(sx, sz, 22, 0, Math.PI * 2); sc.fill();
+
+      // Sun dot
+      sc.fillStyle = '#ffdc50';
+      sc.beginPath(); sc.arc(sx, sz, 7, 0, Math.PI * 2); sc.fill();
+      sc.strokeStyle = 'rgba(255,255,255,0.6)';
+      sc.lineWidth = 1.5;
+      sc.stroke();
+
+      // Center dot (map center)
+      sc.fillStyle = 'rgba(255,255,255,0.35)';
+      sc.beginPath(); sc.arc(cx, cy, 3, 0, Math.PI * 2); sc.fill();
+    }
+
+    function syncSunUI() {
+      document.getElementById('sunXInput').value   = sunX.toFixed(2);
+      document.getElementById('sunYInput').value   = sunY.toFixed(2);
+      document.getElementById('sunZInput').value   = sunZ.toFixed(2);
+      document.getElementById('sunYSlider').value  = sunY;
+      document.getElementById('sunYLabel').textContent = sunY.toFixed(2);
+      document.getElementById('sunOutput').textContent =
+        `sun_vector ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)}`;
+      drawSun();
+    }
+
+    function updateSunFromEvent(e) {
+      const rect = sunCanvas.getBoundingClientRect();
+      const scaleX = SUN_SIZE / rect.width;
+      const scaleY = SUN_SIZE / rect.height;
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+      const px = (clientX - rect.left) * scaleX;
+      const py = (clientY - rect.top)  * scaleY;
+      const { x, z } = canvasToSun(px, py);
+      sunX = parseFloat(clamp(x, -SUN_MAX, SUN_MAX).toFixed(2));
+      sunZ = parseFloat(clamp(z, -SUN_MAX, SUN_MAX).toFixed(2));
+      syncSunUI();
+    }
+
+    sunCanvas.addEventListener('mousedown', e => { isDraggingSun = true; updateSunFromEvent(e); });
+    window.addEventListener('mousemove',    e => { if (isDraggingSun) updateSunFromEvent(e); });
+    window.addEventListener('mouseup',      ()  => { isDraggingSun = false; });
+
+    sunCanvas.addEventListener('touchstart', e => { e.preventDefault(); isDraggingSun = true; updateSunFromEvent(e); }, { passive: false });
+    window.addEventListener('touchmove',     e => { if (isDraggingSun) { e.preventDefault(); updateSunFromEvent(e); } }, { passive: false });
+    window.addEventListener('touchend',      ()  => { isDraggingSun = false; });
+
+    function onSunYSlider() {
+      sunY = parseFloat(document.getElementById('sunYSlider').value);
+      syncSunUI();
+    }
+
+    function onSunInput() {
+      sunX = clamp(parseFloat(document.getElementById('sunXInput').value) || 0, -SUN_MAX, SUN_MAX);
+      sunY = Math.max(0, parseFloat(document.getElementById('sunYInput').value) || 0);
+      sunZ = clamp(parseFloat(document.getElementById('sunZInput').value) || 0, -SUN_MAX, SUN_MAX);
+      document.getElementById('sunYSlider').value = sunY;
+      document.getElementById('sunYLabel').textContent = sunY.toFixed(2);
+      document.getElementById('sunOutput').textContent =
+        `sun_vector ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)}`;
+      drawSun();
+    }
+
+    function copySunVector() {
+      navigator.clipboard.writeText(document.getElementById('sunOutput').textContent).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    // Initial render
+    syncSunUI();
   </script>
 </body>
 </html>
