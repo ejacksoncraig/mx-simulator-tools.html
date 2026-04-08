@@ -466,6 +466,7 @@
     <button class="tab-btn"        onclick="switchTab('tc')">Terrain Calculator</button>
     <button class="tab-btn"        onclick="switchTab('sb')">Statue Builder</button>
     <button class="tab-btn"        onclick="switchTab('sv')">Sun Vector</button>
+    <button class="tab-btn"        onclick="switchTab('bb')">Billboards</button>
   </div>
 
   <div class="container">
@@ -664,6 +665,49 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyStatues()">Copy to Clipboard</button>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ BILLBOARDS ══════════════ -->
+    <div id="tab-bb" class="tab-panel">
+
+      <div class="section-header">Folder Path</div>
+      <div class="input-group">
+        <label for="bbPath">Path after @ (e.g. my_track/billboards)</label>
+        <input type="text" id="bbPath" placeholder="my_track/billboards" oninput="buildBillboardLines()">
+      </div>
+
+      <div class="section-header">Select PNG Files</div>
+      <div class="file-upload-area" id="bbDropZone">
+        <input type="file" id="bbFiles" accept=".png" multiple onchange="onBbFilesSelected(this)">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Click to choose .png files</div>
+        <div class="upload-hint">One row per file — adjust height and aspect ratio per billboard</div>
+        <div class="file-name" id="bbFileName"></div>
+      </div>
+
+      <div class="section-header" id="bbPairsHeader" style="display:none">File List</div>
+      <table class="stat-table" id="bbTable">
+        <thead>
+          <tr>
+            <th style="width:40%">.png file</th>
+            <th style="width:22%">Height</th>
+            <th style="width:28%">Aspect Ratio</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody id="bbTableBody"></tbody>
+      </table>
+      <div class="btn-row" id="bbAddRowBtn" style="display:none;margin-top:8px">
+        <button class="btn btn-secondary" onclick="addBbRow()">+ Add Row</button>
+      </div>
+
+      <div class="section-header">Generated Lines</div>
+      <div class="code-block" id="bbOutput" style="white-space:pre-wrap;word-break:break-all;">Select files above to generate lines…</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyBillboards()">Copy to Clipboard</button>
       </div>
 
     </div>
@@ -1081,6 +1125,119 @@
         setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
       });
     }
+    // ══════════════ BILLBOARDS ══════════════════════════════════════════════
+
+    let bbPngFiles = [];
+
+    const bbDropZone = document.getElementById('bbDropZone');
+    bbDropZone.addEventListener('dragover',  e => { e.preventDefault(); bbDropZone.classList.add('dragover'); });
+    bbDropZone.addEventListener('dragleave', ()  => bbDropZone.classList.remove('dragover'));
+    bbDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      bbDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('bbFiles').files = e.dataTransfer.files;
+      onBbFilesSelected({ files: e.dataTransfer.files });
+    });
+
+    function onBbFilesSelected(input) {
+      const files = Array.from(input.files).filter(f => f.name.toLowerCase().endsWith('.png'));
+      if (!files.length) return;
+      bbPngFiles = files.map(f => f.name);
+      document.getElementById('bbFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('bbFileName').style.display = 'block';
+      document.getElementById('bbTableBody').innerHTML = '';
+      bbPngFiles.forEach(name => addBbRow(name));
+      document.getElementById('bbPairsHeader').style.display = '';
+      document.getElementById('bbTable').classList.add('visible');
+      document.getElementById('bbAddRowBtn').style.display = '';
+      buildBillboardLines();
+    }
+
+    function addBbRow(png = null) {
+      const tbody = document.getElementById('bbTableBody');
+      const tr = document.createElement('tr');
+
+      const tdPng  = document.createElement('td');
+      const tdH    = document.createElement('td');
+      const tdAr   = document.createElement('td');
+      const tdDel  = document.createElement('td');
+
+      // PNG select
+      const sel = document.createElement('select');
+      sel.onchange = buildBillboardLines;
+      const blank = document.createElement('option');
+      blank.value = ''; blank.textContent = '— none —';
+      if (!png) blank.selected = true;
+      sel.appendChild(blank);
+      bbPngFiles.forEach(f => {
+        const o = document.createElement('option');
+        o.value = f; o.textContent = f;
+        if (f === png) o.selected = true;
+        sel.appendChild(o);
+      });
+      tdPng.appendChild(sel);
+
+      // Height input
+      const hInput = document.createElement('input');
+      hInput.type = 'number'; hInput.value = '80'; hInput.step = '0.5'; hInput.min = '0';
+      hInput.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
+      hInput.oninput = buildBillboardLines;
+      tdH.appendChild(hInput);
+
+      // Aspect ratio input
+      const arInput = document.createElement('input');
+      arInput.type = 'number'; arInput.value = '0.5'; arInput.step = '0.05'; arInput.min = '0';
+      arInput.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
+      arInput.oninput = buildBillboardLines;
+      tdAr.appendChild(arInput);
+
+      // Delete
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
+      delBtn.onclick = () => { tr.remove(); buildBillboardLines(); };
+      tdDel.appendChild(delBtn);
+
+      tr.append(tdPng, tdH, tdAr, tdDel);
+      tbody.appendChild(tr);
+      buildBillboardLines();
+    }
+
+    function buildBillboardLines() {
+      const tbody = document.getElementById('bbTableBody');
+      if (!tbody) return;
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      if (!rows.length) {
+        document.getElementById('bbOutput').textContent = 'Add rows above to generate lines…';
+        return;
+      }
+      const path   = document.getElementById('bbPath').value.trim().replace(/\/+$/, '');
+      const prefix = path ? `@${path}/` : '@';
+
+      const lines = rows.map((row, i) => {
+        const png = row.querySelector('select').value;
+        const h   = parseFloat(row.querySelectorAll('input')[0].value) || 80;
+        const ar  = parseFloat(row.querySelectorAll('input')[1].value) || 0.5;
+        const y   = i * 10;
+        const file = png ? `${prefix}${png}` : 'null';
+        return `[100.000000 ${y.toFixed(6)} 0.000000] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
+      });
+
+      document.getElementById('bbOutput').textContent = lines.join('\n');
+    }
+
+    function copyBillboards() {
+      const text = document.getElementById('bbOutput').textContent;
+      const skip = ['Select files above to generate lines…', 'Add rows above to generate lines…'];
+      if (skip.includes(text)) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
     // ══════════════ SUN VECTOR ══════════════════════════════════════════════
 
     let sunX = 0.75, sunY = 0.75, sunZ = -1.0;
