@@ -711,7 +711,7 @@
       </div>
 
       <div class="section-header" style="margin-top:24px">sun_vector Output</div>
-      <div class="code-block" id="sunOutput">sun_vector 0.750000 0.750000 -1.000000</div>
+      <div class="code-block" id="sunOutput">sun_vector [ 0.750000 0.750000 -1.000000 ]</div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copySunVector()">Copy to Clipboard</button>
       </div>
@@ -1209,7 +1209,7 @@
       document.getElementById('sunYSlider').value  = sunY;
       document.getElementById('sunYLabel').textContent = sunY.toFixed(2);
       document.getElementById('sunOutput').textContent =
-        `sun_vector ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)}`;
+        `sun_vector [ ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)} ]`;
       drawSun();
     }
 
@@ -1247,7 +1247,7 @@
       document.getElementById('sunYSlider').value = sunY;
       document.getElementById('sunYLabel').textContent = sunY.toFixed(2);
       document.getElementById('sunOutput').textContent =
-        `sun_vector ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)}`;
+        `sun_vector [ ${sunX.toFixed(6)} ${sunY.toFixed(6)} ${sunZ.toFixed(6)} ]`;
       drawSun();
     }
 
