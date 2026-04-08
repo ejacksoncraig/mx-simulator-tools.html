@@ -767,6 +767,61 @@
         <button class="btn btn-primary" onclick="copySunVector()">Copy to Clipboard</button>
       </div>
 
+      <!-- ── Skybox ── -->
+      <div class="section-header" style="margin-top:28px">Skybox Lines</div>
+      <div class="input-group" style="max-width:340px">
+        <label for="skyFolder">Folder name (after @)</label>
+        <input type="text" id="skyFolder" placeholder="my_track/sky" oninput="buildSkyboxLines()">
+      </div>
+      <div class="file-upload-area" id="skyDropZone" style="margin-top:10px">
+        <input type="file" id="skyFiles" accept="image/*" multiple onchange="onSkyFilesSelected(this)">
+        <div class="upload-icon">🌅</div>
+        <div class="upload-text">Click to choose skybox image files</div>
+        <div class="upload-hint">Directions are auto-detected from filenames — adjust in the table if needed</div>
+        <div class="file-name" id="skyFileName"></div>
+      </div>
+      <div class="section-header" id="skyPairsHeader" style="display:none;margin-top:14px">Direction Mapping</div>
+      <table class="stat-table" id="skyTable">
+        <thead>
+          <tr>
+            <th style="width:55%">File</th>
+            <th style="width:35%">Direction</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody id="skyTableBody"></tbody>
+      </table>
+      <div class="section-header" style="margin-top:14px">Skybox Output</div>
+      <div class="code-block" id="skyOutput" style="white-space:pre-wrap;word-break:break-all;">Select files above to generate lines…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copySkybox()">Copy to Clipboard</button>
+      </div>
+
+      <!-- ── Fog ── -->
+      <div class="section-header" style="margin-top:28px">Fog Line</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>Red (0–1)</label>
+          <input type="number" id="fogR" value="0.56" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Green (0–1)</label>
+          <input type="number" id="fogG" value="0.64" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Blue (0–1)</label>
+          <input type="number" id="fogB" value="0.35" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Density</label>
+          <input type="number" id="fogDensity" value="0.0032" step="0.0001" min="0" oninput="buildFogLine()">
+        </div>
+      </div>
+      <div class="code-block" id="fogOutput" style="margin-top:8px">fog [0.560000 0.640000 0.350000] 0.003200</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyFog()">Copy to Clipboard</button>
+      </div>
+
     </div>
 
   </div><!-- /container -->
@@ -1457,6 +1512,144 @@
       document.getElementById('sunMapUpload').value = '';
       document.getElementById('sunMapClear').style.display = 'none';
       drawSun();
+    }
+
+    // ══════════════ SKYBOX ══════════════════════════════════════════════
+
+    let skyFileNames = [];
+
+    const SKY_DIRECTIONS = ['n', 's', 'e', 'w', 'u', 'd', 'env', 'skip'];
+    const SKY_DIR_LABELS = {
+      n:    'North  (sky_n)',
+      s:    'South  (sky_s)',
+      e:    'East   (sky_e)',
+      w:    'West   (sky_w)',
+      u:    'Up     (sky_u)',
+      d:    'Down   (sky_d)',
+      env:  'Env    (sky_env)',
+      skip: '— skip —'
+    };
+
+    const skyDropZone = document.getElementById('skyDropZone');
+    skyDropZone.addEventListener('dragover',  e => { e.preventDefault(); skyDropZone.classList.add('dragover'); });
+    skyDropZone.addEventListener('dragleave', ()  => skyDropZone.classList.remove('dragover'));
+    skyDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      skyDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('skyFiles').files = e.dataTransfer.files;
+      onSkyFilesSelected({ files: e.dataTransfer.files });
+    });
+
+    function detectSkyDir(name) {
+      const n = name.toLowerCase().replace(/\.[^.]+$/, ''); // strip extension
+      if (/north|[_\-]n$/.test(n)) return 'n';
+      if (/south|[_\-]s$/.test(n)) return 's';
+      if (/east|[_\-]e$/.test(n))  return 'e';
+      if (/west|[_\-]w$/.test(n))  return 'w';
+      if (/[_\-]up$|^up$/.test(n) || /[_\-]u$/.test(n)) return 'u';
+      if (/[_\-]down$|^down$/.test(n) || /[_\-]d$/.test(n)) return 'd';
+      if (/env/.test(n))            return 'env';
+      return 'skip';
+    }
+
+    function onSkyFilesSelected(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
+      skyFileNames = files.map(f => f.name);
+      document.getElementById('skyFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('skyFileName').style.display = 'block';
+      document.getElementById('skyTableBody').innerHTML = '';
+      skyFileNames.forEach(name => addSkyRow(name, detectSkyDir(name)));
+      document.getElementById('skyPairsHeader').style.display = '';
+      document.getElementById('skyTable').classList.add('visible');
+      buildSkyboxLines();
+    }
+
+    function addSkyRow(filename, dir) {
+      const tbody = document.getElementById('skyTableBody');
+      const tr = document.createElement('tr');
+
+      const tdFile = document.createElement('td');
+      tdFile.textContent = filename;
+      tdFile.style.cssText = 'font-family:Courier New,monospace;font-size:12px;word-break:break-all';
+
+      const tdDir = document.createElement('td');
+      const sel = document.createElement('select');
+      sel.onchange = buildSkyboxLines;
+      SKY_DIRECTIONS.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d;
+        o.textContent = SKY_DIR_LABELS[d];
+        if (d === dir) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px;background:white;color:#222';
+      tdDir.appendChild(sel);
+
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
+      delBtn.onclick = () => { tr.remove(); buildSkyboxLines(); };
+      tdDel.appendChild(delBtn);
+
+      tr.append(tdFile, tdDir, tdDel);
+      tbody.appendChild(tr);
+    }
+
+    function buildSkyboxLines() {
+      const tbody = document.getElementById('skyTableBody');
+      if (!tbody) return;
+      const rows  = Array.from(tbody.querySelectorAll('tr'));
+      const folder = document.getElementById('skyFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+
+      const lines = [];
+      rows.forEach(row => {
+        const filename = row.cells[0].textContent.trim();
+        const dir = row.querySelector('select').value;
+        if (dir === 'skip') return;
+        if (dir === 'env') {
+          lines.push(`sky_env ${prefix}${filename}`);
+        } else {
+          lines.push(`sky_${dir} ${prefix}${filename}`);
+        }
+      });
+
+      document.getElementById('skyOutput').textContent = lines.length
+        ? lines.join('\n')
+        : 'Select files above to generate lines…';
+    }
+
+    function copySkybox() {
+      const text = document.getElementById('skyOutput').textContent;
+      if (text === 'Select files above to generate lines…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    // ══════════════ FOG ══════════════════════════════════════════════
+
+    function buildFogLine() {
+      const r = parseFloat(document.getElementById('fogR').value)       || 0;
+      const g = parseFloat(document.getElementById('fogG').value)       || 0;
+      const b = parseFloat(document.getElementById('fogB').value)       || 0;
+      const d = parseFloat(document.getElementById('fogDensity').value) || 0;
+      document.getElementById('fogOutput').textContent =
+        `fog [${r.toFixed(6)} ${g.toFixed(6)} ${b.toFixed(6)}] ${d.toFixed(6)}`;
+    }
+
+    function copyFog() {
+      navigator.clipboard.writeText(document.getElementById('fogOutput').textContent).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
     }
 
     // Initial render
