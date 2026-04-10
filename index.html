@@ -901,37 +901,35 @@
 
       <!-- ── Manual placement ── -->
       <div class="section-header" style="margin-top:28px">Manual Placement</div>
-      <div class="grid-2">
-        <div class="input-group">
-          <label for="dpManualFolder">Folder path (after @)</label>
-          <div style="display:flex;gap:8px;align-items:stretch">
-            <input type="text" id="dpManualFolder" placeholder="trackfolder/decalfolder" oninput="buildManualDecalLines()" style="flex:1;min-width:0">
-            <label class="btn btn-secondary" style="font-size:13px;padding:9px 14px;cursor:pointer;margin:0;white-space:nowrap;display:flex;align-items:center">
-              Browse
-              <input type="file" accept="image/*,.png" style="display:none" onchange="onDpManualFolderSelect(this)">
-            </label>
-          </div>
-          <div id="dpManualFolderHint" style="font-size:12px;color:#888;margin-top:4px;display:none"></div>
-        </div>
-        <div style="display:flex;align-items:flex-end;padding-bottom:4px">
-          <button class="btn btn-secondary" onclick="addManualDecalRow()" style="font-size:13px;padding:9px 18px">+ Add Decal</button>
-        </div>
+      <div class="input-group">
+        <label for="dpManualFolder">Folder path (after @)</label>
+        <input type="text" id="dpManualFolder" placeholder="trackfolder/decalfolder" oninput="buildManualDecalLines()">
+      </div>
+      <div class="file-upload-area" id="dpManualDropZone" style="margin-top:10px">
+        <input type="file" id="dpManualFiles" accept="image/*,.png" multiple onchange="onDpManualFilesSelected(this)">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">Click to choose decal PNG files</div>
+        <div class="upload-hint">Select multiple — each file gets its own row, filename used automatically</div>
+        <div class="file-name" id="dpManualFileName"></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-secondary" onclick="addManualDecalRow(null)" style="font-size:13px">+ Add Row Manually</button>
       </div>
 
-      <table class="stat-table visible" id="dpManualTable" style="margin-top:10px">
+      <table class="stat-table" id="dpManualTable" style="margin-top:10px">
         <thead>
           <tr>
-            <th style="width:10%">File</th>
-            <th style="width:21%">X</th>
-            <th style="width:21%">Z</th>
-            <th style="width:26%">Rotation</th>
-            <th style="width:12%">Size</th>
-            <th style="width:10%"></th>
+            <th style="width:22%">File</th>
+            <th style="width:18%">X</th>
+            <th style="width:18%">Z</th>
+            <th style="width:24%">Rotation</th>
+            <th style="width:10%">Size</th>
+            <th style="width:8%"></th>
           </tr>
         </thead>
         <tbody id="dpManualBody"></tbody>
       </table>
-      <p id="dpManualEmpty" style="font-size:13px;color:#999;margin-top:10px;text-align:center">No decals added yet — click "+ Add Decal" above</p>
+      <p id="dpManualEmpty" style="font-size:13px;color:#999;margin-top:10px;text-align:center">No decals added yet — select files above or click "+ Add Row Manually"</p>
 
       <div class="section-header" style="margin-top:14px">
         Manual Output
@@ -1888,31 +1886,57 @@
       generateDecals();
     }
 
-    function onDpManualFolderSelect(input) {
-      if (!input.files[0]) return;
-      const fname  = input.files[0].name;
-      const folder = document.getElementById('dpManualFolder');
-      // Only fill in if empty — otherwise user has already typed a path
-      if (!folder.value.trim()) {
-        folder.value = fname.replace(/\.[^.]+$/, ''); // strip ext as a starting hint
-      }
-      const hint = document.getElementById('dpManualFolderHint');
-      hint.textContent = `Selected: ${fname} — files in this tool are auto-numbered (1.png, 2.png…)`;
-      hint.style.display = '';
-      buildManualDecalLines();
+    let dpManualFileNames = [];
+
+    const dpManualDropZone = document.getElementById('dpManualDropZone');
+    dpManualDropZone.addEventListener('dragover',  e => { e.preventDefault(); dpManualDropZone.classList.add('dragover'); });
+    dpManualDropZone.addEventListener('dragleave', ()  => dpManualDropZone.classList.remove('dragover'));
+    dpManualDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dpManualDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('dpManualFiles').files = e.dataTransfer.files;
+      onDpManualFilesSelected({ files: e.dataTransfer.files });
+    });
+
+    function onDpManualFilesSelected(input) {
+      const files = Array.from(input.files).filter(f => /\.(png|jpg|jpeg|webp|tga)$/i.test(f.name));
+      if (!files.length) return;
+      dpManualFileNames = files.map(f => f.name);
+      document.getElementById('dpManualFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('dpManualFileName').style.display = 'block';
+      document.getElementById('dpManualBody').innerHTML = '';
+      files.forEach(f => addManualDecalRow(f.name));
+      document.getElementById('dpManualTable').classList.add('visible');
+      document.getElementById('dpManualEmpty').style.display = 'none';
     }
 
     // ══════════════ DECAL PLACER — MANUAL ═══════════════════════════════════
 
-    function addManualDecalRow() {
-      const tbody   = document.getElementById('dpManualBody');
-      const fileNum = tbody.querySelectorAll('tr').length + 1;
-      const tr      = document.createElement('tr');
+    function addManualDecalRow(filename) {
+      const tbody = document.getElementById('dpManualBody');
+      const tr    = document.createElement('tr');
 
-      // File label (auto-numbered)
+      // File — select from loaded files, or plain text input if none loaded
       const tdFile = document.createElement('td');
-      tdFile.style.cssText = 'font-family:Courier New,monospace;font-size:12px;font-weight:700;color:#4582ec';
-      tdFile.textContent = `${fileNum}.png`;
+      if (dpManualFileNames.length) {
+        const sel = document.createElement('select');
+        sel.onchange = buildManualDecalLines;
+        sel.style.cssText = 'width:100%;padding:4px 6px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:11px;background:white;color:#222';
+        dpManualFileNames.forEach(f => {
+          const o = document.createElement('option');
+          o.value = f; o.textContent = f;
+          if (f === filename) o.selected = true;
+          sel.appendChild(o);
+        });
+        tdFile.appendChild(sel);
+      } else {
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.value = filename || ''; inp.placeholder = 'file.png';
+        inp.style.cssText = 'width:100%;padding:4px 6px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:11px';
+        inp.oninput = buildManualDecalLines;
+        tdFile.appendChild(inp);
+      }
 
       // X
       const tdX = document.createElement('td');
@@ -1966,12 +1990,8 @@
     }
 
     function renumberManualRows() {
-      document.getElementById('dpManualBody').querySelectorAll('tr').forEach((row, i) => {
-        row.cells[0].textContent = `${i + 1}.png`;
-      });
-      const empty = document.getElementById('dpManualEmpty');
       const hasRows = document.getElementById('dpManualBody').querySelectorAll('tr').length > 0;
-      empty.style.display = hasRows ? 'none' : '';
+      document.getElementById('dpManualEmpty').style.display = hasRows ? 'none' : '';
     }
 
     function buildManualDecalLines() {
@@ -1981,7 +2001,7 @@
       const countEl = document.getElementById('dpManualCount');
 
       if (!rows.length) {
-        out.textContent   = 'Add rows above to generate lines…';
+        out.textContent     = 'Add rows above to generate lines…';
         countEl.textContent = '';
         return;
       }
@@ -1989,13 +2009,16 @@
       const folder = document.getElementById('dpManualFolder').value.trim().replace(/\/+$/, '');
       const prefix = folder ? `@${folder}/` : '@';
 
-      const lines = rows.map((row, i) => {
-        const nums = row.querySelectorAll('input[type="number"]');
+      const lines = rows.map(row => {
+        // filename from select or text input in first cell
+        const fileEl  = row.cells[0].querySelector('select') || row.cells[0].querySelector('input[type="text"]');
+        const fname   = fileEl ? fileEl.value.trim() : '';
+        const nums    = row.querySelectorAll('input[type="number"]');
         const x   = parseFloat(nums[0].value) || 0;
         const z   = parseFloat(nums[1].value) || 0;
         const rot = parseFloat(nums[2].value) || 0;
         const sz  = parseFloat(nums[3].value) || 30;
-        return `[${x.toFixed(6)} ${z.toFixed(6)}] ${rot.toFixed(6)} ${sz.toFixed(6)} 1.000000 ${prefix}${i + 1}.png`;
+        return `[${x.toFixed(6)} ${z.toFixed(6)}] ${rot.toFixed(6)} ${sz.toFixed(6)} 1.000000 ${prefix}${fname}`;
       });
 
       out.textContent     = lines.join('\n');
