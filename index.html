@@ -467,6 +467,7 @@
     <button class="tab-btn"        onclick="switchTab('sb')">Statue Builder</button>
     <button class="tab-btn"        onclick="switchTab('sv')">Sun Vector</button>
     <button class="tab-btn"        onclick="switchTab('bb')">Billboards</button>
+    <button class="tab-btn"        onclick="switchTab('dp')">Decal Placer</button>
   </div>
 
   <div class="container">
@@ -842,6 +843,53 @@
       <div class="code-block" id="fogOutput" style="margin-top:8px">fog [0.560000 0.640000 0.350000] 0.003200</div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyFog()">Copy to Clipboard</button>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ DECAL PLACER ══════════════ -->
+    <div id="tab-dp" class="tab-panel">
+
+      <div class="section-header">Settings</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="dpTerrainSize">Terrain size in pixels</label>
+          <input type="number" id="dpTerrainSize" placeholder="1025" min="1" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label for="dpDecalSize">Decal size in pixels</label>
+          <input type="number" id="dpDecalSize" placeholder="30" min="1" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label for="dpSpacing">Spacing distance (pixels)</label>
+          <input type="number" id="dpSpacing" placeholder="20" min="0" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label>Random decal rotation</label>
+          <div style="display:flex;gap:24px;padding:9px 0">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;cursor:pointer;margin:0">
+              <input type="radio" name="dpRotation" value="yes" onchange="generateDecals()" style="width:16px;height:16px;accent-color:#4582ec;cursor:pointer"> Yes
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;cursor:pointer;margin:0">
+              <input type="radio" name="dpRotation" value="no" checked onchange="generateDecals()" style="width:16px;height:16px;accent-color:#4582ec;cursor:pointer"> No
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-top:4px">
+        <label for="dpPath">Decal path from your track folder</label>
+        <input type="text" id="dpPath" placeholder="trackfolder/decalfolder/decal.png" oninput="generateDecals()">
+      </div>
+
+      <div class="section-header" style="margin-top:22px">
+        Generated Lines
+        <span id="dpCount" style="font-weight:400;font-size:12px;text-transform:none;letter-spacing:0;margin-left:6px;opacity:0.85"></span>
+      </div>
+      <div class="code-block" id="dpOutput" style="white-space:pre-wrap;word-break:break-all;max-height:420px;overflow-y:auto;line-height:1.6">Fill in the settings above to generate lines…</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyDecalPlacer()">Copy to Clipboard</button>
       </div>
 
     </div>
@@ -1723,6 +1771,76 @@
 
     // Initial render
     syncSunUI();
+
+    // ══════════════ DECAL PLACER ══════════════════════════════════════════════
+
+    function generateDecals() {
+      const terrain  = parseFloat(document.getElementById('dpTerrainSize').value);
+      const decalSz  = parseFloat(document.getElementById('dpDecalSize').value);
+      const spacing  = parseFloat(document.getElementById('dpSpacing').value);
+      const randRot  = document.querySelector('input[name="dpRotation"]:checked').value === 'yes';
+      const path     = document.getElementById('dpPath').value.trim();
+      const out      = document.getElementById('dpOutput');
+      const countEl  = document.getElementById('dpCount');
+
+      if (isNaN(terrain) || isNaN(decalSz) || isNaN(spacing) || terrain <= 0 || decalSz <= 0 || spacing < 0) {
+        out.textContent   = 'Fill in the settings above to generate lines…';
+        countEl.textContent = '';
+        return;
+      }
+
+      const step  = decalSz + spacing;
+      const start = decalSz / 2;
+      const end   = terrain - decalSz / 2;
+
+      if (start > end) {
+        out.textContent   = 'Decal is larger than the terrain — reduce decal size.';
+        countEl.textContent = '';
+        return;
+      }
+
+      const positions = [];
+      for (let p = start; p <= end + 1e-6; p += step) positions.push(p);
+
+      const filePath = path ? `@${path}` : '@';
+      const lines = [];
+
+      for (let zi = 0; zi < positions.length; zi++) {
+        for (let xi = 0; xi < positions.length; xi++) {
+          const rot = randRot ? Math.random() * 2 * Math.PI : 0;
+          lines.push(
+            `[${positions[xi].toFixed(6)} ${positions[zi].toFixed(6)}] ` +
+            `${rot.toFixed(6)} ${decalSz.toFixed(6)} 1.000000 ${filePath}`
+          );
+        }
+      }
+
+      if (!lines.length) {
+        out.textContent   = 'No decals fit within the terrain with these settings.';
+        countEl.textContent = '';
+        return;
+      }
+
+      out.textContent     = lines.join('\n');
+      countEl.textContent = `— ${lines.length.toLocaleString()} line${lines.length !== 1 ? 's' : ''}`;
+    }
+
+    function copyDecalPlacer() {
+      const text = document.getElementById('dpOutput').textContent;
+      const skip = [
+        'Fill in the settings above to generate lines…',
+        'No decals fit within the terrain with these settings.',
+        'Decal is larger than the terrain — reduce decal size.'
+      ];
+      if (skip.includes(text)) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
   </script>
 </body>
 </html>
