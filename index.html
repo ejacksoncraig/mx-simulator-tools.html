@@ -1438,9 +1438,9 @@
         const png = row.querySelector('select').value;
         const h   = parseFloat(row.querySelectorAll('input')[0].value) || 80;
         const ar  = parseFloat(row.querySelectorAll('input')[1].value) || 0.5;
-        const y   = i * 10;
+        const z   = i * 20;
         const file = png ? `${prefix}${png}` : 'null';
-        return `[100.000000 ${y.toFixed(6)} 0.000000] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
+        return `[100.000000 0.000000 ${z.toFixed(6)}] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
       });
 
       document.getElementById('bbOutput').textContent = lines.join('\n');
