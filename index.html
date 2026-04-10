@@ -892,6 +892,42 @@
         <button class="btn btn-primary" onclick="copyDecalPlacer()">Copy to Clipboard</button>
       </div>
 
+      <!-- ── Manual placement ── -->
+      <div class="section-header" style="margin-top:28px">Manual Placement</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="dpManualFolder">Folder path (after @)</label>
+          <input type="text" id="dpManualFolder" placeholder="trackfolder/decalfolder" oninput="buildManualDecalLines()">
+        </div>
+        <div style="display:flex;align-items:flex-end;padding-bottom:4px">
+          <button class="btn btn-secondary" onclick="addManualDecalRow()" style="font-size:13px;padding:9px 18px">+ Add Decal</button>
+        </div>
+      </div>
+
+      <table class="stat-table visible" id="dpManualTable" style="margin-top:10px">
+        <thead>
+          <tr>
+            <th style="width:10%">File</th>
+            <th style="width:21%">X</th>
+            <th style="width:21%">Z</th>
+            <th style="width:26%">Rotation</th>
+            <th style="width:12%">Size</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody id="dpManualBody"></tbody>
+      </table>
+      <p id="dpManualEmpty" style="font-size:13px;color:#999;margin-top:10px;text-align:center">No decals added yet — click "+ Add Decal" above</p>
+
+      <div class="section-header" style="margin-top:14px">
+        Manual Output
+        <span id="dpManualCount" style="font-weight:400;font-size:12px;text-transform:none;letter-spacing:0;margin-left:6px;opacity:0.85"></span>
+      </div>
+      <div class="code-block" id="dpManualOutput" style="white-space:pre-wrap;word-break:break-all;max-height:360px;overflow-y:auto;line-height:1.6">Add rows above to generate lines…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyManualDecals()">Copy to Clipboard</button>
+      </div>
+
     </div>
 
   </div><!-- /container -->
@@ -1823,6 +1859,117 @@
 
       out.textContent     = lines.join('\n');
       countEl.textContent = `— ${lines.length.toLocaleString()} line${lines.length !== 1 ? 's' : ''}`;
+    }
+
+    // ══════════════ DECAL PLACER — MANUAL ═══════════════════════════════════
+
+    function addManualDecalRow() {
+      const tbody   = document.getElementById('dpManualBody');
+      const fileNum = tbody.querySelectorAll('tr').length + 1;
+      const tr      = document.createElement('tr');
+
+      // File label (auto-numbered)
+      const tdFile = document.createElement('td');
+      tdFile.style.cssText = 'font-family:Courier New,monospace;font-size:12px;font-weight:700;color:#4582ec';
+      tdFile.textContent = `${fileNum}.png`;
+
+      // X
+      const tdX = document.createElement('td');
+      const xIn = makeDecalInput(0, 1); xIn.oninput = buildManualDecalLines;
+      tdX.appendChild(xIn);
+
+      // Z
+      const tdZ = document.createElement('td');
+      const zIn = makeDecalInput(0, 1); zIn.oninput = buildManualDecalLines;
+      tdZ.appendChild(zIn);
+
+      // Rotation + 🎲 button
+      const tdRot = document.createElement('td');
+      const rotWrap = document.createElement('div');
+      rotWrap.style.cssText = 'display:flex;gap:4px;align-items:center';
+      const rotIn = makeDecalInput(0, 0.0001); rotIn.oninput = buildManualDecalLines;
+      rotIn.style.flex = '1'; rotIn.style.minWidth = '0';
+      const rndBtn = document.createElement('button');
+      rndBtn.textContent = '🎲'; rndBtn.title = 'Random rotation';
+      rndBtn.style.cssText = 'padding:4px 7px;border:1.5px solid #d0d5dd;border-radius:6px;background:#fafafa;cursor:pointer;font-size:13px;flex-shrink:0;line-height:1';
+      rndBtn.onclick = () => { rotIn.value = (Math.random() * 2 * Math.PI).toFixed(6); buildManualDecalLines(); };
+      rotWrap.append(rotIn, rndBtn);
+      tdRot.appendChild(rotWrap);
+
+      // Size — default from grid section if filled
+      const tdSz = document.createElement('td');
+      const szDefault = parseFloat(document.getElementById('dpDecalSize').value) || 30;
+      const szIn = makeDecalInput(szDefault, 1); szIn.min = '0'; szIn.oninput = buildManualDecalLines;
+      tdSz.appendChild(szIn);
+
+      // Delete
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
+      delBtn.onclick = () => { tr.remove(); renumberManualRows(); buildManualDecalLines(); };
+      tdDel.appendChild(delBtn);
+
+      tr.append(tdFile, tdX, tdZ, tdRot, tdSz, tdDel);
+      tbody.appendChild(tr);
+      document.getElementById('dpManualEmpty').style.display = 'none';
+      buildManualDecalLines();
+    }
+
+    function makeDecalInput(val, step) {
+      const el = document.createElement('input');
+      el.type  = 'number';
+      el.value = val;
+      el.step  = step;
+      el.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
+      return el;
+    }
+
+    function renumberManualRows() {
+      document.getElementById('dpManualBody').querySelectorAll('tr').forEach((row, i) => {
+        row.cells[0].textContent = `${i + 1}.png`;
+      });
+      const empty = document.getElementById('dpManualEmpty');
+      const hasRows = document.getElementById('dpManualBody').querySelectorAll('tr').length > 0;
+      empty.style.display = hasRows ? 'none' : '';
+    }
+
+    function buildManualDecalLines() {
+      const tbody   = document.getElementById('dpManualBody');
+      const rows    = Array.from(tbody.querySelectorAll('tr'));
+      const out     = document.getElementById('dpManualOutput');
+      const countEl = document.getElementById('dpManualCount');
+
+      if (!rows.length) {
+        out.textContent   = 'Add rows above to generate lines…';
+        countEl.textContent = '';
+        return;
+      }
+
+      const folder = document.getElementById('dpManualFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+
+      const lines = rows.map((row, i) => {
+        const nums = row.querySelectorAll('input[type="number"]');
+        const x   = parseFloat(nums[0].value) || 0;
+        const z   = parseFloat(nums[1].value) || 0;
+        const rot = parseFloat(nums[2].value) || 0;
+        const sz  = parseFloat(nums[3].value) || 30;
+        return `[${x.toFixed(6)} ${z.toFixed(6)}] ${rot.toFixed(6)} ${sz.toFixed(6)} 1.000000 ${prefix}${i + 1}.png`;
+      });
+
+      out.textContent     = lines.join('\n');
+      countEl.textContent = `— ${lines.length} line${lines.length !== 1 ? 's' : ''}`;
+    }
+
+    function copyManualDecals() {
+      const text = document.getElementById('dpManualOutput').textContent;
+      if (text === 'Add rows above to generate lines…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
     }
 
     function copyDecalPlacer() {
