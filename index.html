@@ -1324,11 +1324,11 @@
         const jmV  = sels[0].value;
         const pngV = sels[1].value;
         const shpV = sels[2].value;
-        const y    = i * 10;
+        const x    = i * 20;
         const jm   = jmV  ? `${prefix}${jmV}`  : 'null';
         const png  = pngV ? `${prefix}${pngV}` : 'null';
         const shp  = shpV ? `${prefix}${shpV}` : 'null';
-        return `[0 ${y} 0] 0.000000 ${jm} ${png} ${shp}`;
+        return `[${x} 0 0] 0.000000 ${jm} ${png} ${shp}`;
       });
 
       document.getElementById('statOutput').textContent = lines.join('\n');
