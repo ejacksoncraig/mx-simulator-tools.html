@@ -655,6 +655,12 @@
         <input type="text" id="statPath" placeholder="my_track/statues" oninput="buildStatueLines()">
       </div>
 
+      <div class="section-header">Placement</div>
+      <div class="input-group" style="max-width:220px">
+        <label for="statStartX">Starting X position</label>
+        <input type="number" id="statStartX" value="0" step="1" oninput="buildStatueLines()">
+      </div>
+
       <div class="section-header">Select Object Files</div>
       <div class="file-upload-area" id="statDropZone">
         <input type="file" id="statFiles" accept=".jm,.png,.shp" multiple onchange="onStatFilesSelected(this)">
@@ -699,6 +705,12 @@
       <div class="input-group">
         <label for="bbPath">Path after @ (e.g. my_track/billboards)</label>
         <input type="text" id="bbPath" placeholder="my_track/billboards" oninput="buildBillboardLines()">
+      </div>
+
+      <div class="section-header">Placement</div>
+      <div class="input-group" style="max-width:220px">
+        <label for="bbStartZ">Starting Z position</label>
+        <input type="number" id="bbStartZ" value="0" step="1" oninput="buildBillboardLines()">
       </div>
 
       <div class="section-header">Select PNG Files</div>
@@ -1323,7 +1335,8 @@
         const jmV  = sels[0].value;
         const pngV = sels[1].value;
         const shpV = sels[2].value;
-        const x    = i * 20;
+        const startX = parseFloat(document.getElementById('statStartX').value) || 0;
+        const x    = startX + i * 20;
         const jm   = jmV  ? `${prefix}${jmV}`  : 'null';
         const png  = pngV ? `${prefix}${pngV}` : 'null';
         const shp  = shpV ? `${prefix}${shpV}` : 'null';
@@ -1437,7 +1450,8 @@
         const png = row.querySelector('select').value;
         const h   = parseFloat(row.querySelectorAll('input')[0].value) || 80;
         const ar  = parseFloat(row.querySelectorAll('input')[1].value) || 0.5;
-        const z   = i * 20;
+        const startZ = parseFloat(document.getElementById('bbStartZ').value) || 0;
+        const z   = startZ + i * 20;
         const file = png ? `${prefix}${png}` : 'null';
         return `[100.000000 0.000000 ${z.toFixed(6)}] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
       });
