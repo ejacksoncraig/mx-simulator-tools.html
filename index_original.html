@@ -449,101 +449,6 @@
       #sunCanvas   { width: 100%; height: auto; aspect-ratio: 1; }
     }
 
-    /* ── Folder browser modal ── */
-    .fb-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.45);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .fb-overlay.open { display: flex; }
-
-    .fb-modal {
-      background: white;
-      border-radius: 14px;
-      box-shadow: 0 12px 48px rgba(0,0,0,0.25);
-      width: 480px;
-      max-width: 92vw;
-      max-height: 80vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .fb-header {
-      padding: 14px 18px;
-      border-bottom: 1px solid #e4e7ec;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .fb-header h3 { font-size: 15px; margin: 0; color: #1a1a2e; }
-
-    .fb-path {
-      padding: 8px 18px;
-      font-size: 12px;
-      font-family: 'Courier New', monospace;
-      color: #666;
-      background: #f5f7fa;
-      border-bottom: 1px solid #e4e7ec;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .fb-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 6px 0;
-      min-height: 200px;
-    }
-
-    .fb-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 18px;
-      cursor: pointer;
-      font-size: 14px;
-      color: #333;
-      transition: background 0.1s;
-    }
-
-    .fb-item:hover { background: #eef3fd; }
-    .fb-item.dir { font-weight: 600; color: #4582ec; }
-
-    .fb-footer {
-      padding: 12px 18px;
-      border-top: 1px solid #e4e7ec;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-    }
-
-    .fb-input-row {
-      padding: 8px 18px;
-      border-bottom: 1px solid #e4e7ec;
-    }
-
-    .fb-input-row input {
-      width: 100%;
-      padding: 7px 10px;
-      border: 1.5px solid #d0d5dd;
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: 'Courier New', monospace;
-    }
-
-    .fb-input-row input:focus {
-      outline: none;
-      border-color: #4582ec;
-    }
-
     /* ── Responsive ── */
     @media (max-width: 580px) {
       .grid-2, .xyz-row { grid-template-columns: 1fr; }
@@ -562,7 +467,6 @@
     <button class="tab-btn"        onclick="switchTab('sb')">Statue Builder</button>
     <button class="tab-btn"        onclick="switchTab('sv')">Sun Vector</button>
     <button class="tab-btn"        onclick="switchTab('bb')">Billboards</button>
-    <button class="tab-btn"        onclick="switchTab('dc')">Decals</button>
   </div>
 
   <div class="container">
@@ -728,18 +632,14 @@
         <input type="text" id="statPath" placeholder="my_track/statues" oninput="buildStatueLines()">
       </div>
 
-      <div class="section-header">Starting Position</div>
-      <div class="input-group" style="max-width:200px">
-        <label for="statStartX">Starting X coordinate</label>
-        <input type="number" id="statStartX" value="0" step="1" oninput="buildStatueLines()">
-      </div>
-
       <div class="section-header">Select Object Files</div>
-      <div class="btn-row" style="margin-top:0;margin-bottom:8px">
-        <button class="btn btn-primary" onclick="browseStatueFolder()">Browse Folder</button>
-        <button class="btn btn-secondary" onclick="browseStatueFolder(true)">+ Add More Files</button>
+      <div class="file-upload-area" id="statDropZone">
+        <input type="file" id="statFiles" accept=".jm,.png,.shp" multiple onchange="onStatFilesSelected(this)">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Click to choose files (.jm, .png, .shp)</div>
+        <div class="upload-hint">Same-name files are paired automatically — adjust any row if names differ</div>
+        <div class="file-name" id="statFileName"></div>
       </div>
-      <div class="file-name" id="statFileName" style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px"></div>
 
       <div class="section-header" id="statPairsHeader" style="display:none">
         File Pairings
@@ -765,7 +665,6 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyStatues()">Copy to Clipboard</button>
-        <button class="btn btn-success" onclick="writeStatuesToFile()">Write to File</button>
       </div>
 
     </div>
@@ -780,10 +679,13 @@
       </div>
 
       <div class="section-header">Select PNG Files</div>
-      <div class="btn-row" style="margin-top:0;margin-bottom:8px">
-        <button class="btn btn-primary" onclick="browseBillboardFolder()">Browse Folder</button>
+      <div class="file-upload-area" id="bbDropZone">
+        <input type="file" id="bbFiles" accept=".png" multiple onchange="onBbFilesSelected(this)">
+        <div class="upload-icon">📂</div>
+        <div class="upload-text">Click to choose .png files</div>
+        <div class="upload-hint">One row per file — adjust height and aspect ratio per billboard</div>
+        <div class="file-name" id="bbFileName"></div>
       </div>
-      <div class="file-name" id="bbFileName" style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px"></div>
 
       <div class="section-header" id="bbPairsHeader" style="display:none">File List</div>
       <table class="stat-table" id="bbTable">
@@ -806,62 +708,6 @@
 
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyBillboards()">Copy to Clipboard</button>
-        <button class="btn btn-success" onclick="writeBillboardsToFile()">Write to File</button>
-      </div>
-
-    </div>
-
-    <!-- ══════════════ DECALS ══════════════ -->
-    <div id="tab-dc" class="tab-panel">
-
-      <div class="section-header">Folder Path</div>
-      <div class="input-group">
-        <label for="dcPath">Path after @ (e.g. my_track/decals)</label>
-        <input type="text" id="dcPath" placeholder="my_track/decals" oninput="buildDecalLines()">
-      </div>
-
-      <div class="section-header">Starting Position</div>
-      <div class="grid-2">
-        <div class="input-group">
-          <label for="dcStartX">Starting X coordinate</label>
-          <input type="number" id="dcStartX" value="200" step="1" oninput="buildDecalLines()">
-        </div>
-        <div class="input-group">
-          <label for="dcStartZ">Starting Z coordinate</label>
-          <input type="number" id="dcStartZ" value="0" step="1" oninput="buildDecalLines()">
-        </div>
-      </div>
-
-      <div class="section-header">Select PNG Files</div>
-      <div class="btn-row" style="margin-top:0;margin-bottom:8px">
-        <button class="btn btn-primary" onclick="browseDecalFolder()">Browse Folder</button>
-        <button class="btn btn-secondary" onclick="browseDecalFolder(true)">+ Add More Files</button>
-      </div>
-      <div class="file-name" id="dcFileName" style="font-size:13px;font-weight:600;color:#333;margin-bottom:8px"></div>
-
-      <div class="section-header" id="dcPairsHeader" style="display:none">File List</div>
-      <table class="stat-table" id="dcTable">
-        <thead>
-          <tr>
-            <th style="width:32%">.png file</th>
-            <th style="width:18%">Rotation</th>
-            <th style="width:18%">Scale</th>
-            <th style="width:22%">Aspect Ratio</th>
-            <th style="width:10%"></th>
-          </tr>
-        </thead>
-        <tbody id="dcTableBody"></tbody>
-      </table>
-      <div class="btn-row" id="dcAddRowBtn" style="display:none;margin-top:8px">
-        <button class="btn btn-secondary" onclick="addDcRow()">+ Add Row</button>
-      </div>
-
-      <div class="section-header">Generated Lines</div>
-      <div class="code-block" id="dcOutput" style="white-space:pre-wrap;word-break:break-all;">Select files above to generate lines…</div>
-
-      <div class="btn-row">
-        <button class="btn btn-primary" onclick="copyDecals()">Copy to Clipboard</button>
-        <button class="btn btn-success" onclick="writeDecalsToFile()">Write to File</button>
       </div>
 
     </div>
@@ -879,7 +725,10 @@
             <span><span class="sun-legend-dot" style="background:#6aa0ff"></span>Shadow direction</span>
           </div>
           <div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="browseMapImage()">Upload Map Image</button>
+            <label class="btn btn-secondary" style="font-size:12px;padding:6px 12px;cursor:pointer;margin:0">
+              Upload Map Image
+              <input type="file" id="sunMapUpload" accept="image/*" style="display:none" onchange="onSunMapUpload(this)">
+            </label>
             <button class="btn btn-secondary" id="sunMapClear" style="font-size:12px;padding:6px 12px;display:none" onclick="clearSunMap()">Clear Image</button>
           </div>
         </div>
@@ -922,112 +771,7 @@
 
   </div><!-- /container -->
 
-  <!-- Folder Browser Modal -->
-  <div class="fb-overlay" id="fbOverlay">
-    <div class="fb-modal">
-      <div class="fb-header">
-        <h3>Browse Folders</h3>
-        <button class="btn-remove" onclick="fbClose(null)">✕</button>
-      </div>
-      <div class="fb-input-row">
-        <input type="text" id="fbPathInput" placeholder="Paste a path and press Enter" onkeydown="if(event.key==='Enter')fbNavigate(this.value)">
-      </div>
-      <div class="fb-path" id="fbCurrentPath">/</div>
-      <div class="fb-list" id="fbList"></div>
-      <div class="fb-footer">
-        <button class="btn btn-secondary" onclick="fbClose(null)">Cancel</button>
-        <button class="btn btn-primary" onclick="fbSelect()">Select This Folder</button>
-      </div>
-    </div>
-  </div>
-
   <script>
-    // ── mxTools API (talks to server.js) ─────────────────────────────────────
-    const api = (endpoint, body) =>
-      fetch('/api/' + endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      }).then(r => r.json());
-
-    window.mxTools = {
-      scanFolder:  (folderPath) => api('scan-folder', { folderPath }),
-      readFile:    (filePath)   => api('read-file',   { filePath }),
-      writeFile:   (filePath, content) => api('write-file', { filePath, content }),
-      readImage:   (filePath)   => api('read-image',  { filePath }),
-      listDir:     (dirPath)    => api('list-dir',    { dirPath }),
-      homeDir:     ()           => fetch('/api/home-dir').then(r => r.json()),
-      // Folder browser (uses modal)
-      selectFolder: () => fbOpen(),
-      selectFile:   (filters) => fbOpen('file', filters)
-    };
-
-    // ── Folder browser modal ─────────────────────────────────────────────────
-    let fbCurrentDir = '';
-    let fbResolve = null;
-    let fbMode = 'folder'; // 'folder' or 'file'
-
-    function fbOpen(mode = 'folder') {
-      fbMode = mode;
-      document.getElementById('fbOverlay').classList.add('open');
-      return new Promise(resolve => {
-        fbResolve = resolve;
-        window.mxTools.homeDir().then(r => {
-          fbNavigate(r.path);
-        });
-      });
-    }
-
-    function fbClose(val) {
-      document.getElementById('fbOverlay').classList.remove('open');
-      if (fbResolve) { fbResolve(val); fbResolve = null; }
-    }
-
-    function fbSelect() {
-      fbClose(fbCurrentDir);
-    }
-
-    async function fbNavigate(dirPath) {
-      const result = await window.mxTools.listDir(dirPath);
-      if (!result.ok) { alert('Cannot open: ' + result.error); return; }
-      fbCurrentDir = dirPath;
-      document.getElementById('fbCurrentPath').textContent = dirPath;
-      document.getElementById('fbPathInput').value = dirPath;
-
-      const list = document.getElementById('fbList');
-      list.innerHTML = '';
-
-      // Parent directory
-      const parent = dirPath.replace(/\/[^/]+\/?$/, '') || '/';
-      if (parent !== dirPath) {
-        const el = document.createElement('div');
-        el.className = 'fb-item dir';
-        el.textContent = '.. (parent)';
-        el.onclick = () => fbNavigate(parent);
-        list.appendChild(el);
-      }
-
-      // Subdirectories
-      result.dirs.sort((a, b) => a.name.localeCompare(b.name)).forEach(d => {
-        const el = document.createElement('div');
-        el.className = 'fb-item dir';
-        el.textContent = '📁 ' + d.name;
-        el.onclick = () => fbNavigate(d.path);
-        list.appendChild(el);
-      });
-
-      // Files (shown for context)
-      result.files.sort((a, b) => a.name.localeCompare(b.name)).forEach(f => {
-        const el = document.createElement('div');
-        el.className = 'fb-item';
-        el.textContent = f.name;
-        if (fbMode === 'file') {
-          el.onclick = () => fbClose(f.path);
-        }
-        list.appendChild(el);
-      });
-    }
-
     // ── Tab switching ────────────────────────────────────────────────────────
     function switchTab(id) {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -1236,98 +980,35 @@
     let statPngFiles = [];
     let statShpFiles = [];
 
+    const statDropZone = document.getElementById('statDropZone');
+    statDropZone.addEventListener('dragover',  e => { e.preventDefault(); statDropZone.classList.add('dragover'); });
+    statDropZone.addEventListener('dragleave', ()  => statDropZone.classList.remove('dragover'));
+    statDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      statDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('statFiles').files = e.dataTransfer.files;
+      onStatFilesSelected({ files: e.dataTransfer.files });
+    });
+
     function statBaseName(fname) {
       const dot = fname.lastIndexOf('.');
       return dot === -1 ? fname : fname.slice(0, dot);
     }
 
-    async function browseStatueFolder(append = false) {
-      const folder = await window.mxTools.selectFolder();
-      if (!folder) return;
-      const result = await window.mxTools.scanFolder(folder);
-      if (!result.ok) { alert('Error scanning folder: ' + result.error); return; }
+    function onStatFilesSelected(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
 
-      const files = result.files;
-      const newJm  = files.filter(f => f.toLowerCase().endsWith('.jm'));
-      const newPng = files.filter(f => f.toLowerCase().endsWith('.png'));
-      const newShp = files.filter(f => f.toLowerCase().endsWith('.shp'));
+      const nameEl = document.getElementById('statFileName');
+      nameEl.textContent = `✔ ${files.length} file(s) selected`;
+      nameEl.style.display = 'block';
 
-      if (append) {
-        // Merge new files into existing lists (avoid duplicates)
-        newJm.forEach(f =>  { if (!statJmFiles.includes(f))  statJmFiles.push(f); });
-        newPng.forEach(f => { if (!statPngFiles.includes(f)) statPngFiles.push(f); });
-        newShp.forEach(f => { if (!statShpFiles.includes(f)) statShpFiles.push(f); });
-        // Refresh dropdowns in existing rows and add new paired rows
-        refreshStatDropdowns();
-        appendNewStatRows(newJm, newPng, newShp);
-      } else {
-        statJmFiles  = newJm;
-        statPngFiles = newPng;
-        statShpFiles = newShp;
-        populateStatTable();
-      }
+      statJmFiles  = files.filter(f => f.name.toLowerCase().endsWith('.jm')).map(f => f.name);
+      statPngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png')).map(f => f.name);
+      statShpFiles = files.filter(f => f.name.toLowerCase().endsWith('.shp')).map(f => f.name);
 
-      const total = statJmFiles.length + statPngFiles.length + statShpFiles.length;
-      document.getElementById('statFileName').textContent = `✔ ${total} file(s) loaded`;
-
-      // Auto-fill the path field from the folder name
-      const folderName = folder.split('/').pop().split('\\').pop();
-      if (!document.getElementById('statPath').value.trim()) {
-        document.getElementById('statPath').value = folderName;
-      }
-
-      document.getElementById('statPairsHeader').style.display = '';
-      document.getElementById('statTable').classList.add('visible');
-      document.getElementById('statAddRowBtn').style.display = '';
-      buildStatueLines();
-    }
-
-    function refreshStatDropdowns() {
-      // Update all existing select dropdowns with the full file lists
-      document.querySelectorAll('#statTableBody tr').forEach(tr => {
-        const sels = tr.querySelectorAll('select');
-        [statJmFiles, statPngFiles, statShpFiles].forEach((list, i) => {
-          const sel = sels[i];
-          const curVal = sel.value;
-          // Rebuild options
-          sel.innerHTML = '';
-          const blank = document.createElement('option');
-          blank.value = ''; blank.textContent = '— none —';
-          sel.appendChild(blank);
-          list.forEach(f => {
-            const o = document.createElement('option');
-            o.value = f; o.textContent = f;
-            sel.appendChild(o);
-          });
-          sel.value = curVal; // Restore selection
-        });
-      });
-    }
-
-    function appendNewStatRows(newJm, newPng, newShp) {
-      // Only add rows for files not already assigned in existing rows
-      const usedJm = new Set(), usedPng = new Set(), usedShp = new Set();
-      document.querySelectorAll('#statTableBody tr').forEach(tr => {
-        const sels = tr.querySelectorAll('select');
-        if (sels[0].value) usedJm.add(sels[0].value);
-        if (sels[1].value) usedPng.add(sels[1].value);
-        if (sels[2].value) usedShp.add(sels[2].value);
-      });
-
-      const unpairedJm = newJm.filter(f => !usedJm.has(f));
-      const unpairedPng = new Set(newPng.filter(f => !usedPng.has(f)));
-
-      unpairedJm.forEach(jm => {
-        const base = statBaseName(jm).toLowerCase();
-        const png = [...unpairedPng].find(p => statBaseName(p).toLowerCase() === base) || null;
-        const shp = newShp.find(s => statBaseName(s).toLowerCase() === base && !usedShp.has(s)) || null;
-        if (png) unpairedPng.delete(png);
-        if (shp) usedShp.add(shp);
-        addStatRow(jm, png, shp);
-      });
-
-      // Remaining unmatched PNGs
-      unpairedPng.forEach(png => addStatRow(null, png, null));
+      populateStatTable();
     }
 
     function populateStatTable() {
@@ -1418,8 +1099,6 @@
       const path   = document.getElementById('statPath').value.trim().replace(/\/+$/, '');
       const prefix = path ? `@${path}/` : '@';
 
-      const startX = parseFloat(document.getElementById('statStartX').value) || 0;
-
       const lines = rows.map((row, i) => {
         const sels = row.querySelectorAll('select');
         const jmV  = sels[0].value;
@@ -1429,7 +1108,7 @@
         const jm   = jmV  ? `${prefix}${jmV}`  : 'null';
         const png  = pngV ? `${prefix}${pngV}` : 'null';
         const shp  = shpV ? `${prefix}${shpV}` : 'null';
-        return `[${startX} ${y} 0] 0.000000 ${jm} ${png} ${shp}`;
+        return `[0 ${y} 0] 0.000000 ${jm} ${png} ${shp}`;
       });
 
       document.getElementById('statOutput').textContent = lines.join('\n');
@@ -1446,37 +1125,27 @@
         setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
       });
     }
-
-    async function writeStatuesToFile() {
-      const text = document.getElementById('statOutput').textContent;
-      if (text.includes('generate lines')) return;
-      const filePath = prompt('Enter full file path to save (e.g. /Users/you/track/statues):');
-      if (!filePath) return;
-      const result = await window.mxTools.writeFile(filePath, text + '\n');
-      if (result.ok) alert('Saved to ' + filePath);
-      else alert('Error: ' + result.error);
-    }
-
     // ══════════════ BILLBOARDS ══════════════════════════════════════════════
 
     let bbPngFiles = [];
 
-    async function browseBillboardFolder() {
-      const folder = await window.mxTools.selectFolder();
-      if (!folder) return;
-      const result = await window.mxTools.scanFolder(folder);
-      if (!result.ok) { alert('Error scanning folder: ' + result.error); return; }
+    const bbDropZone = document.getElementById('bbDropZone');
+    bbDropZone.addEventListener('dragover',  e => { e.preventDefault(); bbDropZone.classList.add('dragover'); });
+    bbDropZone.addEventListener('dragleave', ()  => bbDropZone.classList.remove('dragover'));
+    bbDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      bbDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('bbFiles').files = e.dataTransfer.files;
+      onBbFilesSelected({ files: e.dataTransfer.files });
+    });
 
-      bbPngFiles = result.files.filter(f => f.toLowerCase().endsWith('.png'));
-      if (!bbPngFiles.length) { alert('No .png files found in that folder.'); return; }
-
-      document.getElementById('bbFileName').textContent = `✔ ${bbPngFiles.length} .png file(s) found`;
-
-      const folderName = folder.split('/').pop().split('\\').pop();
-      if (!document.getElementById('bbPath').value.trim()) {
-        document.getElementById('bbPath').value = folderName;
-      }
-
+    function onBbFilesSelected(input) {
+      const files = Array.from(input.files).filter(f => f.name.toLowerCase().endsWith('.png'));
+      if (!files.length) return;
+      bbPngFiles = files.map(f => f.name);
+      document.getElementById('bbFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('bbFileName').style.display = 'block';
       document.getElementById('bbTableBody').innerHTML = '';
       bbPngFiles.forEach(name => addBbRow(name));
       document.getElementById('bbPairsHeader').style.display = '';
@@ -1567,175 +1236,6 @@
         btn.style.background = '#02b875';
         setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
       });
-    }
-
-    async function writeBillboardsToFile() {
-      const text = document.getElementById('bbOutput').textContent;
-      if (text.includes('generate lines')) return;
-      const filePath = prompt('Enter full file path to save (e.g. /Users/you/track/billboards):');
-      if (!filePath) return;
-      const result = await window.mxTools.writeFile(filePath, text + '\n');
-      if (result.ok) alert('Saved to ' + filePath);
-      else alert('Error: ' + result.error);
-    }
-
-    // ══════════════ DECALS ══════════════════════════════════════════════════
-
-    let dcPngFiles = [];
-
-    async function browseDecalFolder(append = false) {
-      const folder = await window.mxTools.selectFolder();
-      if (!folder) return;
-      const result = await window.mxTools.scanFolder(folder);
-      if (!result.ok) { alert('Error scanning folder: ' + result.error); return; }
-
-      const newPng = result.files.filter(f => f.toLowerCase().endsWith('.png'));
-      if (!newPng.length) { alert('No .png files found in that folder.'); return; }
-
-      if (append) {
-        newPng.forEach(f => { if (!dcPngFiles.includes(f)) dcPngFiles.push(f); });
-        // Refresh existing dropdowns
-        document.querySelectorAll('#dcTableBody tr').forEach(tr => {
-          const sel = tr.querySelector('select');
-          const curVal = sel.value;
-          sel.innerHTML = '';
-          const blank = document.createElement('option');
-          blank.value = ''; blank.textContent = '— none —';
-          sel.appendChild(blank);
-          dcPngFiles.forEach(f => {
-            const o = document.createElement('option');
-            o.value = f; o.textContent = f;
-            sel.appendChild(o);
-          });
-          sel.value = curVal;
-        });
-        // Add rows for truly new files
-        const used = new Set();
-        document.querySelectorAll('#dcTableBody select').forEach(s => { if (s.value) used.add(s.value); });
-        newPng.filter(f => !used.has(f)).forEach(f => addDcRow(f));
-      } else {
-        dcPngFiles = newPng;
-        document.getElementById('dcTableBody').innerHTML = '';
-        dcPngFiles.forEach(name => addDcRow(name));
-      }
-
-      document.getElementById('dcFileName').textContent = `✔ ${dcPngFiles.length} .png file(s) loaded`;
-
-      const folderName = folder.split('/').pop().split('\\').pop();
-      if (!document.getElementById('dcPath').value.trim()) {
-        document.getElementById('dcPath').value = folderName;
-      }
-
-      document.getElementById('dcPairsHeader').style.display = '';
-      document.getElementById('dcTable').classList.add('visible');
-      document.getElementById('dcAddRowBtn').style.display = '';
-      buildDecalLines();
-    }
-
-    function addDcRow(png = null) {
-      const tbody = document.getElementById('dcTableBody');
-      const tr = document.createElement('tr');
-
-      // PNG select
-      const tdPng = document.createElement('td');
-      const sel = document.createElement('select');
-      sel.onchange = buildDecalLines;
-      const blank = document.createElement('option');
-      blank.value = ''; blank.textContent = '— none —';
-      if (!png) blank.selected = true;
-      sel.appendChild(blank);
-      dcPngFiles.forEach(f => {
-        const o = document.createElement('option');
-        o.value = f; o.textContent = f;
-        if (f === png) o.selected = true;
-        sel.appendChild(o);
-      });
-      tdPng.appendChild(sel);
-
-      // Rotation
-      const tdRot = document.createElement('td');
-      const rotInput = document.createElement('input');
-      rotInput.type = 'number'; rotInput.value = '0'; rotInput.step = '0.1';
-      rotInput.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
-      rotInput.oninput = buildDecalLines;
-      tdRot.appendChild(rotInput);
-
-      // Scale
-      const tdScale = document.createElement('td');
-      const scaleInput = document.createElement('input');
-      scaleInput.type = 'number'; scaleInput.value = '32'; scaleInput.step = '1'; scaleInput.min = '0';
-      scaleInput.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
-      scaleInput.oninput = buildDecalLines;
-      tdScale.appendChild(scaleInput);
-
-      // Aspect ratio
-      const tdAr = document.createElement('td');
-      const arInput = document.createElement('input');
-      arInput.type = 'number'; arInput.value = '1.0'; arInput.step = '0.05'; arInput.min = '0';
-      arInput.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
-      arInput.oninput = buildDecalLines;
-      tdAr.appendChild(arInput);
-
-      // Delete
-      const tdDel = document.createElement('td');
-      const delBtn = document.createElement('button');
-      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
-      delBtn.onclick = () => { tr.remove(); buildDecalLines(); };
-      tdDel.appendChild(delBtn);
-
-      tr.append(tdPng, tdRot, tdScale, tdAr, tdDel);
-      tbody.appendChild(tr);
-      buildDecalLines();
-    }
-
-    function buildDecalLines() {
-      const tbody = document.getElementById('dcTableBody');
-      if (!tbody) return;
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      if (!rows.length) {
-        document.getElementById('dcOutput').textContent = 'Add rows above to generate lines…';
-        return;
-      }
-
-      const dcPath = document.getElementById('dcPath').value.trim().replace(/\/+$/, '');
-      const prefix = dcPath ? `@${dcPath}/` : '@';
-      const startX = parseFloat(document.getElementById('dcStartX').value) || 200;
-      const startZ = parseFloat(document.getElementById('dcStartZ').value) || 0;
-
-      const lines = rows.map((row, i) => {
-        const png    = row.querySelector('select').value;
-        const inputs = row.querySelectorAll('input');
-        const rot    = parseFloat(inputs[0].value) || 0;
-        const scale  = parseFloat(inputs[1].value) || 32;
-        const ar     = parseFloat(inputs[2].value) || 1;
-        const z      = startZ + i * 10;
-        const file   = png ? `${prefix}${png}` : 'null';
-        return `[${startX.toFixed(6)} ${z.toFixed(6)}] ${rot.toFixed(6)} ${scale.toFixed(6)} ${ar.toFixed(6)} ${file}`;
-      });
-
-      document.getElementById('dcOutput').textContent = lines.join('\n');
-    }
-
-    function copyDecals() {
-      const text = document.getElementById('dcOutput').textContent;
-      const skip = ['Select files above to generate lines…', 'Add rows above to generate lines…'];
-      if (skip.includes(text)) return;
-      navigator.clipboard.writeText(text).then(() => {
-        const btn = event.target;
-        btn.textContent = 'Copied!';
-        btn.style.background = '#02b875';
-        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
-      });
-    }
-
-    async function writeDecalsToFile() {
-      const text = document.getElementById('dcOutput').textContent;
-      if (text.includes('generate lines')) return;
-      const filePath = prompt('Enter full file path to save (e.g. /Users/you/track/decals):');
-      if (!filePath) return;
-      const result = await window.mxTools.writeFile(filePath, text + '\n');
-      if (result.ok) alert('Saved to ' + filePath);
-      else alert('Error: ' + result.error);
     }
 
     // ══════════════ SUN VECTOR ══════════════════════════════════════════════
@@ -1936,22 +1436,25 @@
       });
     }
 
-    async function browseMapImage() {
-      const filePath = await window.mxTools.selectFile();
-      if (!filePath) return;
-      const result = await window.mxTools.readImage(filePath);
-      if (!result.ok) { alert('Error loading image: ' + result.error); return; }
-      const img = new Image();
-      img.onload = () => {
-        sunMapImg = img;
-        document.getElementById('sunMapClear').style.display = '';
-        drawSun();
+    function onSunMapUpload(input) {
+      const file = input.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          sunMapImg = img;
+          document.getElementById('sunMapClear').style.display = '';
+          drawSun();
+        };
+        img.src = e.target.result;
       };
-      img.src = result.dataUrl;
+      reader.readAsDataURL(file);
     }
 
     function clearSunMap() {
       sunMapImg = null;
+      document.getElementById('sunMapUpload').value = '';
       document.getElementById('sunMapClear').style.display = 'none';
       drawSun();
     }

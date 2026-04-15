@@ -1,0 +1,12 @@
+{
+  "name": "mx-simulator-tools",
+  "version": "1.0.0",
+  "description": "MX Simulator track building tools",
+  "main": "main.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "devDependencies": {
+    "electron": "^35.0.0"
+  }
+}
