@@ -562,7 +562,6 @@
     <button class="tab-btn"        onclick="switchTab('sb')">Statue Builder</button>
     <button class="tab-btn"        onclick="switchTab('sv')">Sun Vector</button>
     <button class="tab-btn"        onclick="switchTab('bb')">Billboards</button>
-    <button class="tab-btn"        onclick="switchTab('dc')">Decals</button>
   </div>
 
   <div class="container">
@@ -717,6 +716,28 @@
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copyTerrain()">Copy to Clipboard</button>
       </div>
+
+      <!-- ── Decal Overlay ── -->
+      <div class="section-header" style="margin-top:28px">Decal Overlay Lines</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="decalFolder">Folder path (after @)</label>
+          <input type="text" id="decalFolder" placeholder="my_track/Textures" oninput="buildDecalLines()">
+        </div>
+        <div class="input-group">
+          <label for="decalGrid">Grid size</label>
+          <select id="decalGrid" onchange="buildDecalLines()" style="width:100%;padding:9px 12px;border:1.5px solid #d0d5dd;border-radius:7px;font-size:14px;color:#222;background:#fafafa">
+            <option value="1">1×1 (1 tile)</option>
+            <option value="2">2×2 (4 tiles)</option>
+            <option value="4" selected>4×4 (16 tiles)</option>
+          </select>
+        </div>
+      </div>
+      <div class="code-block" id="decalOutput" style="white-space:pre-wrap;word-break:break-all;margin-top:8px">Calculate terrain values above first…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyDecal()">Copy to Clipboard</button>
+      </div>
+
     </div>
 
     <!-- ══════════════ STATUE BUILDER ══════════════ -->
@@ -726,12 +747,6 @@
       <div class="input-group">
         <label for="statPath">Path after @ (e.g. my_track/statues)</label>
         <input type="text" id="statPath" placeholder="my_track/statues" oninput="buildStatueLines()">
-      </div>
-
-      <div class="section-header">Starting Position</div>
-      <div class="input-group" style="max-width:200px">
-        <label for="statStartX">Starting X coordinate</label>
-        <input type="number" id="statStartX" value="0" step="1" oninput="buildStatueLines()">
       </div>
 
       <div class="section-header">Select Object Files</div>
@@ -756,7 +771,7 @@
         </thead>
         <tbody id="statTableBody"></tbody>
       </table>
-      <div class="btn-row" id="statAddRowBtn" style="display:none;margin-top:8px">
+      <div class="btn-row" id="statAddRowBtn" style="margin-top:8px">
         <button class="btn btn-secondary" onclick="addStatRow()">+ Add Row</button>
       </div>
 
@@ -777,6 +792,12 @@
       <div class="input-group">
         <label for="bbPath">Path after @ (e.g. my_track/billboards)</label>
         <input type="text" id="bbPath" placeholder="my_track/billboards" oninput="buildBillboardLines()">
+      </div>
+
+      <div class="section-header">Placement</div>
+      <div class="input-group" style="max-width:220px">
+        <label for="bbStartZ">Starting Z position</label>
+        <input type="number" id="bbStartZ" value="0" step="1" oninput="buildBillboardLines()">
       </div>
 
       <div class="section-header">Select PNG Files</div>
@@ -916,6 +937,156 @@
       <div class="code-block" id="sunOutput">sun_vector [ 0.750000 0.750000 -1.000000 ]</div>
       <div class="btn-row">
         <button class="btn btn-primary" onclick="copySunVector()">Copy to Clipboard</button>
+      </div>
+
+      <!-- ── Skybox ── -->
+      <div class="section-header" style="margin-top:28px">Skybox Lines</div>
+      <div class="input-group" style="max-width:340px">
+        <label for="skyFolder">Folder name (after @)</label>
+        <input type="text" id="skyFolder" placeholder="my_track/sky" oninput="buildSkyboxLines()">
+      </div>
+      <div class="file-upload-area" id="skyDropZone" style="margin-top:10px">
+        <input type="file" id="skyFiles" accept="image/*" multiple onchange="onSkyFilesSelected(this)">
+        <div class="upload-icon">🌅</div>
+        <div class="upload-text">Click to choose skybox image files</div>
+        <div class="upload-hint">Directions are auto-detected from filenames — adjust in the table if needed</div>
+        <div class="file-name" id="skyFileName"></div>
+      </div>
+      <div class="section-header" id="skyPairsHeader" style="display:none;margin-top:14px">Direction Mapping</div>
+      <table class="stat-table" id="skyTable">
+        <thead>
+          <tr>
+            <th style="width:55%">File</th>
+            <th style="width:35%">Direction</th>
+            <th style="width:10%"></th>
+          </tr>
+        </thead>
+        <tbody id="skyTableBody"></tbody>
+      </table>
+      <div class="section-header" style="margin-top:14px">Skybox Output</div>
+      <div class="code-block" id="skyOutput" style="white-space:pre-wrap;word-break:break-all;">Select files above to generate lines…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copySkybox()">Copy to Clipboard</button>
+      </div>
+
+      <!-- ── Fog ── -->
+      <div class="section-header" style="margin-top:28px">Fog Line</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label>Red (0–1)</label>
+          <input type="number" id="fogR" value="0.56" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Green (0–1)</label>
+          <input type="number" id="fogG" value="0.64" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Blue (0–1)</label>
+          <input type="number" id="fogB" value="0.35" step="0.01" min="0" max="1" oninput="buildFogLine()">
+        </div>
+        <div class="input-group">
+          <label>Density</label>
+          <input type="number" id="fogDensity" value="0.0032" step="0.0001" min="0" oninput="buildFogLine()">
+        </div>
+      </div>
+      <div class="code-block" id="fogOutput" style="margin-top:8px">fog [0.560000 0.640000 0.350000] 0.003200</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyFog()">Copy to Clipboard</button>
+      </div>
+
+    </div>
+
+    <!-- ══════════════ DECAL PLACER ══════════════ -->
+    <div id="tab-dp" class="tab-panel">
+
+      <div class="section-header">Settings</div>
+      <div class="grid-2">
+        <div class="input-group">
+          <label for="dpTerrainSize">Terrain size in pixels</label>
+          <input type="number" id="dpTerrainSize" placeholder="1025" min="1" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label for="dpDecalSize">Decal size in pixels</label>
+          <input type="number" id="dpDecalSize" placeholder="30" min="1" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label for="dpSpacing">Spacing distance (pixels)</label>
+          <input type="number" id="dpSpacing" placeholder="20" min="0" step="1" oninput="generateDecals()">
+        </div>
+        <div class="input-group">
+          <label>Random decal rotation</label>
+          <div style="display:flex;gap:24px;padding:9px 0">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;cursor:pointer;margin:0">
+              <input type="radio" name="dpRotation" value="yes" onchange="generateDecals()" style="width:16px;height:16px;accent-color:#4582ec;cursor:pointer"> Yes
+            </label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600;font-size:14px;cursor:pointer;margin:0">
+              <input type="radio" name="dpRotation" value="no" checked onchange="generateDecals()" style="width:16px;height:16px;accent-color:#4582ec;cursor:pointer"> No
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="input-group" style="margin-top:4px">
+        <label for="dpPath">Decal path from your track folder</label>
+        <div style="display:flex;gap:8px;align-items:stretch">
+          <input type="text" id="dpPath" placeholder="trackfolder/decalfolder/decal.png" oninput="generateDecals()" style="flex:1;min-width:0">
+          <label class="btn btn-secondary" style="font-size:13px;padding:9px 14px;cursor:pointer;margin:0;white-space:nowrap;display:flex;align-items:center">
+            Browse
+            <input type="file" accept="image/*,.png" style="display:none" onchange="onDpGridFileSelect(this)">
+          </label>
+        </div>
+        <div id="dpPathHint" style="font-size:12px;color:#888;margin-top:4px;display:none"></div>
+      </div>
+
+      <div class="section-header" style="margin-top:22px">
+        Generated Lines
+        <span id="dpCount" style="font-weight:400;font-size:12px;text-transform:none;letter-spacing:0;margin-left:6px;opacity:0.85"></span>
+      </div>
+      <div class="code-block" id="dpOutput" style="white-space:pre-wrap;word-break:break-all;max-height:420px;overflow-y:auto;line-height:1.6">Fill in the settings above to generate lines…</div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyDecalPlacer()">Copy to Clipboard</button>
+      </div>
+
+      <!-- ── Manual placement ── -->
+      <div class="section-header" style="margin-top:28px">Manual Placement</div>
+      <div class="input-group">
+        <label for="dpManualFolder">Folder path (after @)</label>
+        <input type="text" id="dpManualFolder" placeholder="trackfolder/decalfolder" oninput="buildManualDecalLines()">
+      </div>
+      <div class="file-upload-area" id="dpManualDropZone" style="margin-top:10px">
+        <input type="file" id="dpManualFiles" accept="image/*,.png" multiple onchange="onDpManualFilesSelected(this)">
+        <div class="upload-icon">🖼️</div>
+        <div class="upload-text">Click to choose decal PNG files</div>
+        <div class="upload-hint">Select multiple — each file gets its own row, filename used automatically</div>
+        <div class="file-name" id="dpManualFileName"></div>
+      </div>
+      <div class="btn-row" style="margin-top:10px">
+        <button class="btn btn-secondary" onclick="addManualDecalRow(null)" style="font-size:13px">+ Add Row Manually</button>
+      </div>
+
+      <table class="stat-table" id="dpManualTable" style="margin-top:10px">
+        <thead>
+          <tr>
+            <th style="width:22%">File</th>
+            <th style="width:18%">X</th>
+            <th style="width:18%">Z</th>
+            <th style="width:24%">Rotation</th>
+            <th style="width:10%">Size</th>
+            <th style="width:8%"></th>
+          </tr>
+        </thead>
+        <tbody id="dpManualBody"></tbody>
+      </table>
+      <p id="dpManualEmpty" style="font-size:13px;color:#999;margin-top:10px;text-align:center">No decals added yet — select files above or click "+ Add Row Manually"</p>
+
+      <div class="section-header" style="margin-top:14px">
+        Manual Output
+        <span id="dpManualCount" style="font-weight:400;font-size:12px;text-transform:none;letter-spacing:0;margin-left:6px;opacity:0.85"></span>
+      </div>
+      <div class="code-block" id="dpManualOutput" style="white-space:pre-wrap;word-break:break-all;max-height:360px;overflow-y:auto;line-height:1.6">Add rows above to generate lines…</div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="copyManualDecals()">Copy to Clipboard</button>
       </div>
 
     </div>
@@ -1118,14 +1289,20 @@
 
     // ══════════════ SIMPLE MAP SIZE ════════════════════════════════════════
 
+    let currentMapWidthFeet = 0;
+
     function calcSimple() {
       const ft = parseFloat(document.getElementById('simpleMapFt').value);
       if (isNaN(ft) || ft <= 0) {
         document.getElementById('simpleOutput').textContent = 'Enter a size above…';
+        currentMapWidthFeet = 0;
+        buildDecalLines();
         return;
       }
       const scale = (ft / 4097).toFixed(6);
       document.getElementById('simpleOutput').textContent = `11 ${scale} 0.000000 0.000000`;
+      currentMapWidthFeet = ft;
+      buildDecalLines();
     }
 
     function copySimple() {
@@ -1218,10 +1395,51 @@
 
       document.getElementById('terrainOutput').textContent =
         `11 ${(base * hSc).toFixed(6)} 0.000000 ${(eFt * vSc).toFixed(6)}`;
+
+      currentMapWidthFeet = wFt * hSc;
+      buildDecalLines();
     }
 
     function copyTerrain() {
       const text = document.getElementById('terrainOutput').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    // ══════════════ DECAL OVERLAY ══════════════════════════════════════════
+
+    function buildDecalLines() {
+      const out = document.getElementById('decalOutput');
+      if (!out) return;
+      if (!currentMapWidthFeet) {
+        out.textContent = 'Calculate terrain values above first…';
+        return;
+      }
+      const grid   = parseInt(document.getElementById('decalGrid').value);
+      const folder = document.getElementById('decalFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+      const tileSize = currentMapWidthFeet / grid;
+      const lines = [];
+      let idx = 1;
+      for (let row = 0; row < grid; row++) {
+        for (let col = 0; col < grid; col++) {
+          const x = tileSize * col + tileSize / 2;
+          const z = tileSize * row + tileSize / 2;
+          lines.push(`[${x.toFixed(6)} ${z.toFixed(6)}] 0.000000 ${tileSize.toFixed(6)} 1.000000 ${prefix}${idx}.png`);
+          idx++;
+        }
+      }
+      out.textContent = lines.join('\n');
+    }
+
+    function copyDecal() {
+      const text = document.getElementById('decalOutput').textContent;
+      const skip = ['Calculate terrain values above first…'];
+      if (skip.includes(text)) return;
       navigator.clipboard.writeText(text).then(() => {
         const btn = event.target;
         btn.textContent = 'Copied!';
@@ -1356,7 +1574,6 @@
 
       document.getElementById('statPairsHeader').style.display = '';
       document.getElementById('statTable').classList.add('visible');
-      document.getElementById('statAddRowBtn').style.display = '';
       buildStatueLines();
     }
 
@@ -1425,11 +1642,12 @@
         const jmV  = sels[0].value;
         const pngV = sels[1].value;
         const shpV = sels[2].value;
-        const y    = i * 10;
+        const startX = parseFloat(document.getElementById('statStartX').value) || 0;
+        const x    = startX + i * 20;
         const jm   = jmV  ? `${prefix}${jmV}`  : 'null';
         const png  = pngV ? `${prefix}${pngV}` : 'null';
         const shp  = shpV ? `${prefix}${shpV}` : 'null';
-        return `[${startX} ${y} 0] 0.000000 ${jm} ${png} ${shp}`;
+        return `[0 ${y} 0] 0.000000 ${jm} ${png} ${shp}`;
       });
 
       document.getElementById('statOutput').textContent = lines.join('\n');
@@ -1549,9 +1767,10 @@
         const png = row.querySelector('select').value;
         const h   = parseFloat(row.querySelectorAll('input')[0].value) || 80;
         const ar  = parseFloat(row.querySelectorAll('input')[1].value) || 0.5;
-        const y   = i * 10;
+        const startZ = parseFloat(document.getElementById('bbStartZ').value) || 0;
+        const z   = startZ + i * 20;
         const file = png ? `${prefix}${png}` : 'null';
-        return `[100.000000 ${y.toFixed(6)} 0.000000] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
+        return `[100.000000 0.000000 ${z.toFixed(6)}] ${h.toFixed(5)} ${ar.toFixed(6)} ${file}`;
       });
 
       document.getElementById('bbOutput').textContent = lines.join('\n');
@@ -1956,8 +2175,379 @@
       drawSun();
     }
 
+    // ══════════════ SKYBOX ══════════════════════════════════════════════
+
+    let skyFileNames = [];
+
+    const SKY_DIRECTIONS = ['n', 's', 'e', 'w', 'u', 'd', 'env', 'skip'];
+    const SKY_DIR_LABELS = {
+      n:    'North  (sky_n)',
+      s:    'South  (sky_s)',
+      e:    'East   (sky_e)',
+      w:    'West   (sky_w)',
+      u:    'Up     (sky_u)',
+      d:    'Down   (sky_d)',
+      env:  'Env    (sky_env)',
+      skip: '— skip —'
+    };
+
+    const skyDropZone = document.getElementById('skyDropZone');
+    skyDropZone.addEventListener('dragover',  e => { e.preventDefault(); skyDropZone.classList.add('dragover'); });
+    skyDropZone.addEventListener('dragleave', ()  => skyDropZone.classList.remove('dragover'));
+    skyDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      skyDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('skyFiles').files = e.dataTransfer.files;
+      onSkyFilesSelected({ files: e.dataTransfer.files });
+    });
+
+    function detectSkyDir(name) {
+      const n = name.toLowerCase().replace(/\.[^.]+$/, ''); // strip extension
+      if (/north|[_\-]n$/.test(n)) return 'n';
+      if (/south|[_\-]s$/.test(n)) return 's';
+      if (/east|[_\-]e$/.test(n))  return 'e';
+      if (/west|[_\-]w$/.test(n))  return 'w';
+      if (/[_\-]up$|^up$/.test(n) || /[_\-]u$/.test(n)) return 'u';
+      if (/[_\-]down$|^down$/.test(n) || /[_\-]d$/.test(n)) return 'd';
+      if (/env/.test(n))            return 'env';
+      return 'skip';
+    }
+
+    function onSkyFilesSelected(input) {
+      const files = Array.from(input.files);
+      if (!files.length) return;
+      skyFileNames = files.map(f => f.name);
+      document.getElementById('skyFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('skyFileName').style.display = 'block';
+      document.getElementById('skyTableBody').innerHTML = '';
+      skyFileNames.forEach(name => addSkyRow(name, detectSkyDir(name)));
+      document.getElementById('skyPairsHeader').style.display = '';
+      document.getElementById('skyTable').classList.add('visible');
+      buildSkyboxLines();
+    }
+
+    function addSkyRow(filename, dir) {
+      const tbody = document.getElementById('skyTableBody');
+      const tr = document.createElement('tr');
+
+      const tdFile = document.createElement('td');
+      tdFile.textContent = filename;
+      tdFile.style.cssText = 'font-family:Courier New,monospace;font-size:12px;word-break:break-all';
+
+      const tdDir = document.createElement('td');
+      const sel = document.createElement('select');
+      sel.onchange = buildSkyboxLines;
+      SKY_DIRECTIONS.forEach(d => {
+        const o = document.createElement('option');
+        o.value = d;
+        o.textContent = SKY_DIR_LABELS[d];
+        if (d === dir) o.selected = true;
+        sel.appendChild(o);
+      });
+      sel.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px;background:white;color:#222';
+      tdDir.appendChild(sel);
+
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
+      delBtn.onclick = () => { tr.remove(); buildSkyboxLines(); };
+      tdDel.appendChild(delBtn);
+
+      tr.append(tdFile, tdDir, tdDel);
+      tbody.appendChild(tr);
+    }
+
+    function buildSkyboxLines() {
+      const tbody = document.getElementById('skyTableBody');
+      if (!tbody) return;
+      const rows  = Array.from(tbody.querySelectorAll('tr'));
+      const folder = document.getElementById('skyFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+
+      const lines = [];
+      rows.forEach(row => {
+        const filename = row.cells[0].textContent.trim();
+        const dir = row.querySelector('select').value;
+        if (dir === 'skip') return;
+        if (dir === 'env') {
+          lines.push(`sky_env ${prefix}${filename}`);
+        } else {
+          lines.push(`sky_${dir} ${prefix}${filename}`);
+        }
+      });
+
+      document.getElementById('skyOutput').textContent = lines.length
+        ? lines.join('\n')
+        : 'Select files above to generate lines…';
+    }
+
+    function copySkybox() {
+      const text = document.getElementById('skyOutput').textContent;
+      if (text === 'Select files above to generate lines…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    // ══════════════ FOG ══════════════════════════════════════════════
+
+    function buildFogLine() {
+      const r = parseFloat(document.getElementById('fogR').value)       || 0;
+      const g = parseFloat(document.getElementById('fogG').value)       || 0;
+      const b = parseFloat(document.getElementById('fogB').value)       || 0;
+      const d = parseFloat(document.getElementById('fogDensity').value) || 0;
+      document.getElementById('fogOutput').textContent =
+        `fog [${r.toFixed(6)} ${g.toFixed(6)} ${b.toFixed(6)}] ${d.toFixed(6)}`;
+    }
+
+    function copyFog() {
+      navigator.clipboard.writeText(document.getElementById('fogOutput').textContent).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
     // Initial render
     syncSunUI();
+
+    // ══════════════ DECAL PLACER ══════════════════════════════════════════════
+
+    function generateDecals() {
+      const terrain  = parseFloat(document.getElementById('dpTerrainSize').value);
+      const decalSz  = parseFloat(document.getElementById('dpDecalSize').value);
+      const spacing  = parseFloat(document.getElementById('dpSpacing').value);
+      const randRot  = document.querySelector('input[name="dpRotation"]:checked').value === 'yes';
+      const path     = document.getElementById('dpPath').value.trim();
+      const out      = document.getElementById('dpOutput');
+      const countEl  = document.getElementById('dpCount');
+
+      if (isNaN(terrain) || isNaN(decalSz) || isNaN(spacing) || terrain <= 0 || decalSz <= 0 || spacing < 0) {
+        out.textContent   = 'Fill in the settings above to generate lines…';
+        countEl.textContent = '';
+        return;
+      }
+
+      const step  = spacing;
+      const start = decalSz / 2;
+      const end   = terrain - decalSz / 2;
+
+      if (start > end) {
+        out.textContent   = 'Decal is larger than the terrain — reduce decal size.';
+        countEl.textContent = '';
+        return;
+      }
+
+      const positions = [];
+      for (let p = start; p <= end + 1e-6; p += step) positions.push(p);
+
+      const filePath = path ? `@${path}` : '@';
+      const lines = [];
+
+      for (let zi = 0; zi < positions.length; zi++) {
+        for (let xi = 0; xi < positions.length; xi++) {
+          const rot = randRot ? Math.random() * 2 * Math.PI : 0;
+          lines.push(
+            `[${positions[xi].toFixed(6)} ${positions[zi].toFixed(6)}] ` +
+            `${rot.toFixed(6)} ${decalSz.toFixed(6)} 1.000000 ${filePath}`
+          );
+        }
+      }
+
+      if (!lines.length) {
+        out.textContent   = 'No decals fit within the terrain with these settings.';
+        countEl.textContent = '';
+        return;
+      }
+
+      out.textContent     = lines.join('\n');
+      countEl.textContent = `— ${lines.length.toLocaleString()} line${lines.length !== 1 ? 's' : ''}`;
+    }
+
+    function onDpGridFileSelect(input) {
+      if (!input.files[0]) return;
+      const fname    = input.files[0].name;
+      const existing = document.getElementById('dpPath').value.trim();
+      const slash    = existing.lastIndexOf('/');
+      const folder   = slash >= 0 ? existing.slice(0, slash) : '';
+      document.getElementById('dpPath').value = folder ? `${folder}/${fname}` : fname;
+      const hint = document.getElementById('dpPathHint');
+      hint.textContent = `Selected: ${fname} — type the folder prefix before the filename if needed`;
+      hint.style.display = '';
+      generateDecals();
+    }
+
+    let dpManualFileNames = [];
+
+    const dpManualDropZone = document.getElementById('dpManualDropZone');
+    dpManualDropZone.addEventListener('dragover',  e => { e.preventDefault(); dpManualDropZone.classList.add('dragover'); });
+    dpManualDropZone.addEventListener('dragleave', ()  => dpManualDropZone.classList.remove('dragover'));
+    dpManualDropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dpManualDropZone.classList.remove('dragover');
+      if (!e.dataTransfer.files.length) return;
+      document.getElementById('dpManualFiles').files = e.dataTransfer.files;
+      onDpManualFilesSelected({ files: e.dataTransfer.files });
+    });
+
+    function onDpManualFilesSelected(input) {
+      const files = Array.from(input.files).filter(f => /\.(png|jpg|jpeg|webp|tga)$/i.test(f.name));
+      if (!files.length) return;
+      dpManualFileNames = files.map(f => f.name);
+      document.getElementById('dpManualFileName').textContent = `✔ ${files.length} file(s) selected`;
+      document.getElementById('dpManualFileName').style.display = 'block';
+      document.getElementById('dpManualBody').innerHTML = '';
+      files.forEach(f => addManualDecalRow(f.name));
+      document.getElementById('dpManualTable').classList.add('visible');
+      document.getElementById('dpManualEmpty').style.display = 'none';
+    }
+
+    // ══════════════ DECAL PLACER — MANUAL ═══════════════════════════════════
+
+    function addManualDecalRow(filename) {
+      const tbody = document.getElementById('dpManualBody');
+      const tr    = document.createElement('tr');
+
+      // File — select from loaded files, or plain text input if none loaded
+      const tdFile = document.createElement('td');
+      if (dpManualFileNames.length) {
+        const sel = document.createElement('select');
+        sel.onchange = buildManualDecalLines;
+        sel.style.cssText = 'width:100%;padding:4px 6px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:11px;background:white;color:#222';
+        dpManualFileNames.forEach(f => {
+          const o = document.createElement('option');
+          o.value = f; o.textContent = f;
+          if (f === filename) o.selected = true;
+          sel.appendChild(o);
+        });
+        tdFile.appendChild(sel);
+      } else {
+        const inp = document.createElement('input');
+        inp.type = 'text'; inp.value = filename || ''; inp.placeholder = 'file.png';
+        inp.style.cssText = 'width:100%;padding:4px 6px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:11px';
+        inp.oninput = buildManualDecalLines;
+        tdFile.appendChild(inp);
+      }
+
+      // X
+      const tdX = document.createElement('td');
+      const xIn = makeDecalInput(0, 1); xIn.oninput = buildManualDecalLines;
+      tdX.appendChild(xIn);
+
+      // Z
+      const tdZ = document.createElement('td');
+      const zIn = makeDecalInput(0, 1); zIn.oninput = buildManualDecalLines;
+      tdZ.appendChild(zIn);
+
+      // Rotation + 🎲 button
+      const tdRot = document.createElement('td');
+      const rotWrap = document.createElement('div');
+      rotWrap.style.cssText = 'display:flex;gap:4px;align-items:center';
+      const rotIn = makeDecalInput(0, 0.0001); rotIn.oninput = buildManualDecalLines;
+      rotIn.style.flex = '1'; rotIn.style.minWidth = '0';
+      const rndBtn = document.createElement('button');
+      rndBtn.textContent = '🎲'; rndBtn.title = 'Random rotation';
+      rndBtn.style.cssText = 'padding:4px 7px;border:1.5px solid #d0d5dd;border-radius:6px;background:#fafafa;cursor:pointer;font-size:13px;flex-shrink:0;line-height:1';
+      rndBtn.onclick = () => { rotIn.value = (Math.random() * 2 * Math.PI).toFixed(6); buildManualDecalLines(); };
+      rotWrap.append(rotIn, rndBtn);
+      tdRot.appendChild(rotWrap);
+
+      // Size — default from grid section if filled
+      const tdSz = document.createElement('td');
+      const szDefault = parseFloat(document.getElementById('dpDecalSize').value) || 30;
+      const szIn = makeDecalInput(szDefault, 1); szIn.min = '0'; szIn.oninput = buildManualDecalLines;
+      tdSz.appendChild(szIn);
+
+      // Delete
+      const tdDel = document.createElement('td');
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn-remove'; delBtn.textContent = '✕';
+      delBtn.onclick = () => { tr.remove(); renumberManualRows(); buildManualDecalLines(); };
+      tdDel.appendChild(delBtn);
+
+      tr.append(tdFile, tdX, tdZ, tdRot, tdSz, tdDel);
+      tbody.appendChild(tr);
+      document.getElementById('dpManualEmpty').style.display = 'none';
+      buildManualDecalLines();
+    }
+
+    function makeDecalInput(val, step) {
+      const el = document.createElement('input');
+      el.type  = 'number';
+      el.value = val;
+      el.step  = step;
+      el.style.cssText = 'width:100%;padding:5px 7px;border:1.5px solid #d0d5dd;border-radius:6px;font-size:12px';
+      return el;
+    }
+
+    function renumberManualRows() {
+      const hasRows = document.getElementById('dpManualBody').querySelectorAll('tr').length > 0;
+      document.getElementById('dpManualEmpty').style.display = hasRows ? 'none' : '';
+    }
+
+    function buildManualDecalLines() {
+      const tbody   = document.getElementById('dpManualBody');
+      const rows    = Array.from(tbody.querySelectorAll('tr'));
+      const out     = document.getElementById('dpManualOutput');
+      const countEl = document.getElementById('dpManualCount');
+
+      if (!rows.length) {
+        out.textContent     = 'Add rows above to generate lines…';
+        countEl.textContent = '';
+        return;
+      }
+
+      const folder = document.getElementById('dpManualFolder').value.trim().replace(/\/+$/, '');
+      const prefix = folder ? `@${folder}/` : '@';
+
+      const lines = rows.map(row => {
+        // filename from select or text input in first cell
+        const fileEl  = row.cells[0].querySelector('select') || row.cells[0].querySelector('input[type="text"]');
+        const fname   = fileEl ? fileEl.value.trim() : '';
+        const nums    = row.querySelectorAll('input[type="number"]');
+        const x   = parseFloat(nums[0].value) || 0;
+        const z   = parseFloat(nums[1].value) || 0;
+        const rot = parseFloat(nums[2].value) || 0;
+        const sz  = parseFloat(nums[3].value) || 30;
+        return `[${x.toFixed(6)} ${z.toFixed(6)}] ${rot.toFixed(6)} ${sz.toFixed(6)} 1.000000 ${prefix}${fname}`;
+      });
+
+      out.textContent     = lines.join('\n');
+      countEl.textContent = `— ${lines.length} line${lines.length !== 1 ? 's' : ''}`;
+    }
+
+    function copyManualDecals() {
+      const text = document.getElementById('dpManualOutput').textContent;
+      if (text === 'Add rows above to generate lines…') return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
+    function copyDecalPlacer() {
+      const text = document.getElementById('dpOutput').textContent;
+      const skip = [
+        'Fill in the settings above to generate lines…',
+        'No decals fit within the terrain with these settings.',
+        'Decal is larger than the terrain — reduce decal size.'
+      ];
+      if (skip.includes(text)) return;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = event.target;
+        btn.textContent = 'Copied!';
+        btn.style.background = '#02b875';
+        setTimeout(() => { btn.textContent = 'Copy to Clipboard'; btn.style.background = ''; }, 2000);
+      });
+    }
+
   </script>
 </body>
 </html>
